@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
 from app.schemas.common import APIResponse
+from app.tasks.scheduler import task_scheduler
 
 
 @asynccontextmanager
@@ -16,8 +17,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """应用生命周期管理"""
     # 启动时初始化数据库
     await init_db()
+    
+    # 启动任务调度器
+    await task_scheduler.start()
+    
     yield
+    
     # 关闭时清理资源
+    await task_scheduler.stop()
     await close_db()
 
 

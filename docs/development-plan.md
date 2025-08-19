@@ -10,40 +10,9 @@
 
 #### 1.1 后端项目初始化
 
-- [x] 更新 `backend/pyproject.toml` 添加必要依赖
-  - fastapi
-  - uvicorn[standard]
-  - sqlalchemy[asyncio]
-  - alembic
-  - pydantic
-  - httpx
-  - apscheduler
-  - python-multipart
-  - python-dotenv
-- [x] 创建 `backend/.env.example` 文件
-- [x] 创建 `backend/app/` 目录结构
-- [x] 设置 `backend/app/core/config.py` 配置管理
-- [x] 设置 `backend/app/core/database.py` 数据库连接
-- [x] 设置 `backend/app/core/logging.py` 日志配置
-
 #### 1.2 前端项目初始化
 
-- [x] 初始化 React + TypeScript + Vite 项目
-- [x] 配置 Tailwind CSS v4
-- [x] 创建 `frontend/src/` 目录结构
-- [x] 设置 TypeScript 严格模式
-- [x] 配置 ESLint 和 Prettier
-- [x] 创建 `frontend/.env.example` 文件
-
 #### 1.3 数据库设置
-
-- [x] 创建 Alembic 迁移配置
-- [x] 设计并创建数据库表结构
-  - `sources` 表
-  - `items` 表
-  - `summaries` 表
-- [x] 编写数据库模型 (`backend/app/models/`)
-- [x] 编写 Pydantic 模式 (`backend/app/schemas/`)
 
 **验收标准**: 项目基础架构完整，依赖配置正确，数据库表结构创建成功。
 
@@ -85,7 +54,7 @@
 
 - [ ] 配置 APScheduler
 - [ ] 创建定时抓取任务
-  - ~~每 120 分钟抓取一次 HN~~ **调整为 15 分钟** (配置文件中设置)
+  - 每 120 分钟抓取一次 (配置文件中设置)
   - 可配置抓取间隔
 - [ ] 创建 `backend/app/tasks/scheduler.py` 任务调度器
 - [ ] 实现任务状态监控
@@ -151,22 +120,15 @@
 - [ ] 实现分页功能
 - [ ] 实现加载状态和错误处理
 
-#### 4.3 文章详情页面
+#### 4.3 数据源切换
 
-- [ ] 创建 `frontend/src/pages/ItemDetail.tsx` 文章详情页
-- [ ] 展示文章基本信息
-- [ ] 展示 AI 生成的摘要
-- [ ] 添加返回列表功能
-
-#### 4.4 数据源切换
-
-- [ ] 实现 Tab 切换不同数据源
+- [ ] Tab 栏切换不同数据源
 - [ ] 创建 `frontend/src/components/SourceTabs.tsx`
 - [ ] 处理数据源切换逻辑
 
 **验收标准**: 前端界面美观且功能完整，用户可以正常浏览热榜和查看详情。
 
-### 阶段 5: 高级功能开发
+### 阶段 5: 其他功能开发
 
 #### 5.1 讨论清单功能
 
@@ -188,8 +150,6 @@
 
 #### 5.3 搜索和过滤功能
 
-- [ ] 添加搜索框组件
-- [ ] 实现文章标题搜索
 - [ ] 实现按日期范围过滤
 - [ ] 添加排序功能
 
@@ -197,21 +157,7 @@
 
 ### 阶段 6: 优化和部署
 
-#### 6.1 性能优化
-
-- [ ] 实现前端数据缓存
-- [ ] 优化数据库查询
-- [ ] 添加分页性能优化
-- [ ] 实现图片懒加载
-
-#### 6.2 错误处理和监控
-
-- [ ] 完善错误处理机制
-- [ ] 添加请求 ID 追踪
-- [ ] 实现日志记录
-- [ ] 添加健康检查接口
-
-#### 6.3 Docker 化部署
+#### 6.1 Docker 化部署
 
 - [ ] 创建 `backend/Dockerfile`
 - [ ] 创建 `frontend/Dockerfile`
@@ -222,14 +168,7 @@
   - 环境变量配置
 - [ ] 编写部署文档
 
-#### 6.4 测试
-
-- [ ] 编写后端单元测试
-- [ ] 编写前端组件测试
-- [ ] 集成测试
-- [ ] 性能测试
-
-**验收标准**: 项目性能优化完成，可以正常部署运行，测试覆盖率达到要求。
+**验收标准**: 项目性能优化完成，可以正常部署运行。
 
 ## 里程碑检查点
 
@@ -286,7 +225,7 @@
 
 **📅 待开始**:
 
-- 阶段 3-6: AI 功能、前端、高级功能、部署优化
+- 阶段 3-6: AI 功能、前端、其他功能、部署
 
 ### 发现的计划问题与改进
 
