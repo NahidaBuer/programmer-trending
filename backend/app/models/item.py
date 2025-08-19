@@ -1,8 +1,8 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.core.database import Base
+from ..core.database import Base
 
 
 class Item(Base):
@@ -10,17 +10,23 @@ class Item(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     source_id = Column(String, ForeignKey("sources.id"), nullable=False)
+    external_id = Column(String, nullable=False)  # 外部系统ID (如HN的item id)
     title = Column(String, nullable=False)
     url = Column(String, nullable=False)
     score = Column(Integer)
     author = Column(String)
-    # 使用 func.now() 让数据库生成当前时间，而不是在应用层
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    fetched_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    comments_count = Column(Integer)  # 评论数
+    tags = Column(JSON, default=list)  # 标签列表
+    # 原始创建时间 (来自外部系统)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    # 抓取时间 (我们的系统时间)
+    fetched_at = Column(DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now())
 
+    # 关系
     source = relationship("Source", back_populates="items")
     summary = relationship("Summary", back_populates="item", uselist=False, cascade="all, delete-orphan")
 
     __table_args__ = (
-        UniqueConstraint("source_id", "url", name="uix_source_url"),
+        # 使用 source_id + external_id 作为唯一约束，而不是 URL
+        UniqueConstraint("source_id", "external_id", name="uix_source_external_id"),
     )

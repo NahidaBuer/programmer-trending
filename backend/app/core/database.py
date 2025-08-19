@@ -50,9 +50,20 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db():
-    """初始化数据库表"""
+    """初始化数据库连接 (表结构由 Alembic 管理)"""
+    # 注意: 数据库表结构应该通过 Alembic 迁移来管理
+    # 不再使用 Base.metadata.create_all() 避免与 Alembic 冲突
+    
+    # 可以在这里添加数据库连接测试或其他初始化逻辑
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        # 测试数据库连接
+        from sqlalchemy import text
+        await conn.execute(text("SELECT 1"))
+        
+    # 提示用户如果遇到表不存在的错误，需要运行 Alembic 迁移
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("Database initialization completed. Use 'alembic upgrade head' to create/update tables.")
 
 
 async def close_db():
