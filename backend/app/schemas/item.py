@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
-from .summary import Summary
+from .common import PaginationMeta
 
 
 class ItemBase(BaseModel):
@@ -18,11 +18,21 @@ class ItemCreate(ItemBase):
     fetched_at: Optional[datetime] = Field(None, description="抓取时间")
 
 
-class Item(ItemBase):
+class ItemUpdate(BaseModel):
+    title: Optional[str] = None
+    score: Optional[int] = None
+    author: Optional[str] = None
+
+
+class ItemResponse(ItemBase):
     id: int = Field(..., description="条目ID")
     created_at: datetime = Field(..., description="创建时间")
     fetched_at: datetime = Field(..., description="抓取时间")
-    summary: Optional[Summary] = Field(None, description="AI 摘要")
 
     class Config:
         from_attributes = True
+
+
+class ItemListResponse(BaseModel):
+    items: List[ItemResponse]
+    pagination: PaginationMeta

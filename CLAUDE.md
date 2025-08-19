@@ -113,14 +113,14 @@ frontend/
 
 ### 环境变量
 
-后端通过 `.env` 文件配置：
+后端通过 `backend/.env` 文件配置：
 
 - `DATABASE_URL`: 数据库连接字符串
 - `DEEPSEEK_API_KEY`: AI API 密钥
-- `CRAWL_INTERVAL_MINUTES`: 抓取间隔 (默认 15)
+- `CRAWL_INTERVAL_MINUTES`: 抓取间隔 (默认 120)
 - `SUMMARY_CONCURRENCY`: 摘要生成并发度
 
-前端通过 `.env.local` 配置，变量名以 `VITE_` 前缀。
+前端通过 `frontend/.env` 配置。
 
 ## 核心功能模块
 

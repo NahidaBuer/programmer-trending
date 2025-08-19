@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -13,7 +14,12 @@ class SummaryCreate(SummaryBase):
     pass
 
 
-class Summary(SummaryBase):
+class SummaryUpdate(BaseModel):
+    content: Optional[str] = None
+    model: Optional[str] = None
+
+
+class SummaryResponse(SummaryBase):
     id: int = Field(..., description="摘要ID")
     created_at: datetime = Field(..., description="创建时间")
 

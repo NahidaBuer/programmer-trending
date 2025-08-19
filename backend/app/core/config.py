@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     deepseek_api_key: Optional[str] = Field(default=None)
     
     # Crawler
-    crawl_interval_minutes: int = Field(default=15)
+    crawl_interval_minutes: int = Field(default=120)
     summary_concurrency: int = Field(default=3)
     
     # Logging
