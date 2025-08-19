@@ -1,0 +1,8 @@
+{
+    "python.languageServer": "None",
+    "ty.interpreter": [
+        "backend/.venv/bin/python"
+    ],
+    "python.venvPath": "backend/.venv",
+    "python.pythonPath": "backend/.venv/bin/python"
+}
