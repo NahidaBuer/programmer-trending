@@ -63,7 +63,7 @@ async def init_db():
     # 提示用户如果遇到表不存在的错误，需要运行 Alembic 迁移
     import logging
     logger = logging.getLogger(__name__)
-    logger.info("Database initialization completed. Use 'alembic upgrade head' to create/update tables.")
+    logger.warning("Database initialization completed. Use 'alembic upgrade head' to create/update tables.")
 
 
 async def close_db():

@@ -40,66 +40,97 @@
 
 #### 2.2 数据抓取模块
 
-- [ ] 创建 `backend/app/crawlers/base.py` 基础爬虫类
-- [ ] 实现 `backend/app/crawlers/hackernews.py` Hacker News 爬虫
+- [x] 创建 `backend/app/crawlers/base.py` 基础爬虫类
+- [x] 实现 `backend/app/crawlers/hackernews.py` Hacker News 爬虫
   - 获取 HN 首页热门文章
   - 解析文章标题、URL、分数、作者等信息
   - 支持数据去重
-- [ ] 创建 `backend/app/services/crawl_service.py` 抓取服务
+- [x] 创建 `backend/app/services/crawl_service.py` 抓取服务
   - 协调多个爬虫
   - 数据入库逻辑
   - 错误处理和重试机制
 
 #### 2.3 任务调度系统
 
-- [ ] 配置 APScheduler
-- [ ] 创建定时抓取任务
+- [x] 配置 APScheduler
+- [x] 创建定时抓取任务
   - 每 120 分钟抓取一次 (配置文件中设置)
   - 可配置抓取间隔
-- [ ] 创建 `backend/app/tasks/scheduler.py` 任务调度器
-- [ ] 实现任务状态监控
+- [x] 创建 `backend/app/tasks/scheduler.py` 任务调度器
+- [x] 实现任务状态监控
 
 #### 2.4 API 路由业务逻辑实现
 
-- [ ] 完善 `GET /api/v1/sources` - 获取数据源列表 (当前返回空数组)
-- [ ] 完善 `GET /api/v1/items` - 获取热榜条目列表 (当前返回空数据)
-  - 支持分页 (page, page_size) ✅
-  - 支持按数据源过滤 (source_id) ✅
-  - 支持按日期过滤 ✅
-- [ ] 完善 `GET /api/v1/items/{item_id}` - 获取单条详情 (当前返回 404)
-- [ ] 实现 `GET /api/v1/summaries/{item_id}` - 获取文章摘要 ✅ 结构已建立
-- [ ] 实现 `POST /api/v1/refresh` - 手动触发抓取 ✅
+- [x] 完善 `GET /api/v1/sources` - 获取数据源列表
+- [x] 完善 `GET /api/v1/items` - 获取热榜条目列表
+  - 支持分页 (page, page_size)
+  - 支持按数据源过滤 (source_id)
+  - 支持按日期过滤
+- [x] 完善 `GET /api/v1/items/{item_id}` - 获取单条详情
+- [x] 实现 `GET /api/v1/summaries/{item_id}` - 获取文章摘要
+- [x] 实现 `POST /api/v1/refresh` - 手动触发抓取
 
 **验收标准**: API 框架搭建完成，能够正常启动和响应请求。下一步需要实现数据抓取和业务逻辑。
 
-### 阶段 3: AI 摘要功能
+### 阶段 3: AI 摘要功能 (基于 Google Gemini)
 
-#### 3.1 AI 服务集成
+#### 3.1 AI 服务集成 (使用 Google Gemini)
 
 - [ ] 创建 `backend/app/services/ai_service.py`
-  - 集成 DeepSeek API
-  - 支持异步调用
-  - 错误处理和重试
-- [ ] 创建摘要生成任务
-  - 异步处理新抓取的文章
-  - 并发控制
-  - 失败重试机制
+  - 集成 Google Gemini API (gemini-2.5-flash)
+  - 支持 URL 上下文功能 (`url_context` tool)
+  - 异步调用实现
+  - 错误处理、重试机制和速率限制
+- [ ] 添加环境变量配置
+  - `GOOGLE_API_KEY`: Gemini API 密钥
+  - `GEMINI_MODEL`: 默认 "gemini-2.5-flash"
+  - `AI_SUMMARY_MAX_LENGTH`: 摘要字数限制 (默认 200)
+  - `AI_SUMMARY_MAX_RETRIES`: 摘要生成最大重试次数 (默认 3)
+- [ ] 删除之前残留的 deepseek 相关的环境变量
 
-#### 3.2 摘要存储和查询
+#### 3.2 摘要状态管理和存储
 
-- [ ] 扩展 `backend/app/models/summary.py`
-- [ ] 实现 `GET /api/v1/items/{item_id}/summary` - 获取文章摘要
-- [ ] 实现摘要生成的状态跟踪
+- [ ] 更新 `backend/app/models/summary.py` 数据库模型
+  - 添加状态管理字段 (`status`, `retry_count`, `error_message`)
+  - 支持摘要生成的完整生命周期追踪
+  - 添加 Gemini 特有的元数据字段 (`generation_duration_ms`, `url_retrieval_status`)
+  - 添加一个存储 json 的字段 `response_json` 用于 api 原始响应内容
+- [ ] 创建数据库迁移文件同步模型变更
+- [ ] 创建 `backend/app/tasks/summary_generator.py` 异步摘要生成任务
+  - 定期查找需要生成摘要的条目
+  - 使用 Gemini URL 上下文功能直接处理 HN 链接
+  - 并发控制和失败降级策略
+  - 集成到现有的 APScheduler 中
+- [ ] 完善 `GET /api/v1/summaries/{item_id}` - 获取文章摘要
+- [ ] 实现摘要生成状态查询和手动触发接口
 
-#### 3.3 AI 对话代理
+#### 3.3 AI 对话代理 (基于 Gemini)
 
-- [ ] 实现 `POST /api/v1/chat` - LLM 对话接口
-  - 接收消息和上下文
-  - 代理调用 DeepSeek API
+- [ ] 实现 `POST /api/v1/chat` - AI 对话接口
+  - 使用 Gemini API 作为对话后端
+  - 支持上下文管理 (可选携带 HN 文章链接)
+  - 输入验证和内容安全过滤
   - 支持流式和非流式响应
-- [ ] 实现输入验证和安全限制
+- [ ] 支持基于 HN 文章的增强对话
+  - 用户可以针对特定文章进行深入讨论
+  - 利用 Gemini 的 URL 上下文能力提供准确回答
+  - 集成项目内的文章摘要作为补充上下文
 
-**验收标准**: AI 摘要功能正常工作，对话代理接口完整可用。
+#### 3.4 优化和监控
+
+- [ ] 实现 API 调用统计和成本追踪
+- [ ] 智能缓存策略 (避免重复处理相同 URL)
+- [ ] 请求去重和批量处理
+- [ ] 摘要质量评估和异常处理机制
+
+**验收标准**: AI 摘要功能正常工作，能够直接处理 HN 链接生成高质量中文摘要；对话代理接口完整可用，支持基于文章内容的深入讨论。
+
+**技术优势**:
+
+- 🔧 利用 Gemini URL 上下文功能，无需复杂网页爬取
+- 💰 使用 Gemini 免费额度，成本可控
+- 🌐 统一技术栈，摘要和对话都基于 Gemini
+- 📈 支持降级策略，URL 无法访问时基于 HN 内容生成摘要
 
 ### 阶段 4: 前端界面开发
 
@@ -184,9 +215,9 @@
 ### 里程碑 1: MVP 版本 (阶段 1-3) 🎯 目标
 
 - [x] 基础架构完整
-- [ ] HN 数据抓取功能 ⬅️ **下一步**
+- [x] HN 数据抓取功能
 - [ ] AI 摘要生成
-- [ ] 基础 API 接口 (✅ 结构完成，❌ 业务逻辑待实现)
+- [ ] 基础 API 接口
 - [ ] 简单的前端展示
 
 ### 里程碑 2: 完整版本 (阶段 1-5)
@@ -218,14 +249,15 @@
 
 - 阶段 1: 项目基础设置 (100%)
 - 阶段 2.1: FastAPI 应用初始化 (100%)
+- 阶段 2: 后端核心功能 (约 25% 完成)
 
 **🟡 进行中**:
 
-- 阶段 2: 后端核心功能 (约 25% 完成)
+- 阶段 3: AI 摘要功能
 
 **📅 待开始**:
 
-- 阶段 3-6: AI 功能、前端、其他功能、部署
+- 阶段 4-6: 前端、其他功能、部署
 
 ### 发现的计划问题与改进
 

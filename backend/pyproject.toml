@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv",
     "asyncpg",
     "aiosqlite",
+    "google-genai>=1.31.0",
 ]
 
 [project.optional-dependencies]

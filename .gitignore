@@ -6,3 +6,7 @@ __pycache__/
 *$py.class
 
 __pypackages__/
+
+.env
+.env.local
+*.db

@@ -20,8 +20,11 @@ class Settings(BaseSettings):
     # Database
     database_url: str = Field(default="sqlite+aiosqlite:///./programmer_trending.db")
     
-    # AI Service
-    deepseek_api_key: Optional[str] = Field(default=None)
+    # AI Service (Google Gemini)
+    google_api_key: Optional[str] = Field(default=None)
+    gemini_model: str = Field(default="gemini-2.5-flash")
+    ai_summary_max_length: int = Field(default=200)
+    ai_summary_max_retries: int = Field(default=3)
     
     # Crawler
     crawl_interval_minutes: int = Field(default=120)
