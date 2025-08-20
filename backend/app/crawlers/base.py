@@ -38,7 +38,7 @@ class BaseCrawler(ABC):
         self.session = httpx.AsyncClient(
             timeout=30.0,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; ProgrammerTrending/1.0; +https://github.com/your-repo)"
+                "User-Agent": "Mozilla/5.0 (compatible; ProgrammerTrending/1.0)"
             }
         )
         return self

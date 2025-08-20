@@ -9,6 +9,7 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 
 from ..core.config import get_settings
 from ..services.crawl_service import crawl_service
+from .summary_generator import summary_generator
 
 logger = logging.getLogger(__name__)
 
@@ -71,17 +72,19 @@ class TaskScheduler:
             next_run_time=datetime.now() + timedelta(seconds=30),  # 30秒后开始首次执行
         )
         
-        # 每小时清理旧数据 (可选)
+        # 定期生成摘要（每15分钟执行一次）
         self.scheduler.add_job(
-            self.cleanup_old_items_job,
-            trigger=CronTrigger(minute=0),  # 每小时的0分执行
-            id="cleanup_old_items", 
-            name="Cleanup Old Items",
-            max_instances=1,
+            self.generate_summaries_job,
+            trigger=IntervalTrigger(minutes=15),
+            id="generate_summaries",
+            name="Generate AI Summaries",
+            max_instances=1,  # 防止重复执行
             replace_existing=True,
+            next_run_time=datetime.now() + timedelta(minutes=2),  # 2分钟后开始首次执行
         )
         
         logger.info(f"Added crawl job with {crawl_interval} minute interval")
+        logger.info("Added summary generation job with 15 minute interval")
         
     async def crawl_all_sources_job(self) -> None:
         """爬取所有数据源的定时任务"""
@@ -108,15 +111,21 @@ class TaskScheduler:
         except Exception as e:
             logger.error(f"Scheduled crawl failed: {e}")
             
-    async def cleanup_old_items_job(self) -> None:
-        """清理旧条目的定时任务 (可选实现)"""
+    async def generate_summaries_job(self) -> None:
+        """生成摘要的定时任务"""
         try:
-            logger.info("Starting cleanup of old items")
-            # TODO: 实现清理逻辑
-            # 例如：删除30天前的条目
+            logger.info("Starting scheduled summary generation")
+            start_time = datetime.now()
+            
+            await summary_generator.start_generation_cycle()
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            logger.info(f"Summary generation completed in {duration:.2f}s")
             
         except Exception as e:
-            logger.error(f"Cleanup job failed: {e}")
+            logger.error(f"Scheduled summary generation failed: {e}")
             
     async def trigger_manual_crawl(self, source_id: str | None = None) -> Dict[str, Any]:
         """
@@ -162,6 +171,37 @@ class TaskScheduler:
                 "duration_seconds": 0,
                 "sources_crawled": 0,
                 "details": {}
+            }
+            
+    async def trigger_manual_summary_generation(self) -> Dict[str, Any]:
+        """
+        手动触发摘要生成任务
+        
+        Returns:
+            执行结果统计
+        """
+        try:
+            logger.info("Manual summary generation triggered")
+            start_time = datetime.now()
+            
+            await summary_generator.start_generation_cycle()
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            return {
+                "success": True,
+                "duration_seconds": duration,
+                "message": "Summary generation completed"
+            }
+            
+        except Exception as e:
+            logger.error(f"Manual summary generation failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "duration_seconds": 0,
+                "message": "Summary generation failed"
             }
     
     def get_job_status(self) -> Dict[str, Any]:

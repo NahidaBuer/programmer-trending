@@ -13,10 +13,10 @@ class Item(Base):
     external_id = Column(String, nullable=False)  # 外部系统ID (如HN的item id)
     title = Column(String, nullable=False)
     url = Column(String, nullable=False)
-    score = Column(Integer)
+    score = Column(Integer)             # 分数(对于 Hacker News, 其他平台采用另外字段映射)
     author = Column(String)
-    comments_count = Column(Integer)  # 评论数
-    tags = Column(JSON, default=list)  # 标签列表
+    comments_count = Column(Integer)    # 评论数
+    tags = Column(JSON, default=list)   # 标签列表
     # 原始创建时间 (来自外部系统)
     created_at = Column(DateTime(timezone=True), nullable=False)
     # 抓取时间 (我们的系统时间)

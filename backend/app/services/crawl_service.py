@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..core.database import AsyncSessionLocal
+from ..core.config import get_settings
 from ..models.source import Source
-from ..models.item import Item  
+from ..models.item import Item
+from ..models.summary import Summary, SummaryStatus  
 from ..crawlers.base import BaseCrawler, CrawledItem
 from ..crawlers.hackernews import HackerNewsCrawler
 
@@ -21,6 +23,7 @@ class CrawlService:
     
     def __init__(self):
         self.crawlers: Dict[str, BaseCrawler] = {}
+        self.settings = get_settings()
         self._register_crawlers()
         
     def _register_crawlers(self) -> None:
@@ -177,6 +180,9 @@ class CrawlService:
             for item in new_items:
                 await db.refresh(item)
                 
+            # 为新文章创建摘要任务
+            await self._create_summary_tasks(db, new_items)
+                
             logger.info(f"Successfully saved {len(new_items)} new items to database")
             return new_items
     
@@ -234,6 +240,41 @@ class CrawlService:
             stats["last_24h"] = result.scalar()
             
             return stats
+    
+    async def _create_summary_tasks(self, db: AsyncSession, items: List[Item]) -> None:
+        """为新文章创建摘要任务"""
+        if not items:
+            return
+            
+        try:
+            summary_tasks = []
+            for item in items:
+                # 检查是否已存在摘要
+                existing = await db.execute(
+                    select(Summary).where(Summary.item_id == item.id)
+                )
+                if existing.first():
+                    continue
+                    
+                # 创建摘要任务
+                summary = Summary(
+                    item_id=item.id,
+                    model=self.settings.gemini_model,
+                    lang="zh-CN",
+                    status=SummaryStatus.PENDING,
+                    retry_count=0,
+                    max_retries=self.settings.ai_summary_max_retries
+                )
+                summary_tasks.append(summary)
+                
+            if summary_tasks:
+                db.add_all(summary_tasks)
+                await db.commit()
+                logger.info(f"Created {len(summary_tasks)} summary tasks for new items")
+                
+        except Exception as e:
+            logger.error(f"Error creating summary tasks: {e}")
+            await db.rollback()
 
 
 # 全局爬虫服务实例

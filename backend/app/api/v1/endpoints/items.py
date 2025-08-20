@@ -1,6 +1,6 @@
 import math
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Request, Query, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
