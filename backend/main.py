@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
+from app.core.logging import setup_logging
 from app.schemas.common import APIResponse
 from app.tasks.scheduler import task_scheduler
 
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """创建 FastAPI 应用实例"""
     settings = get_settings()
+    
+    # 设置日志配置
+    setup_logging()
     
     app = FastAPI(
         title=settings.app_name,
@@ -92,9 +96,54 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
     settings = get_settings()
+    
+    # 设置日志（确保在 uvicorn 启动前配置）
+    setup_logging()
+    
+    # uvicorn 日志配置
+    log_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "use_colors": True,
+            },
+        },
+        "handlers": {
+            "default": {
+                "formatter": "default",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+            },
+        },
+        "root": {
+            "level": settings.log_level.upper(),
+            "handlers": ["default"],
+        },
+        "loggers": {
+            "uvicorn": {
+                "handlers": ["default"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "uvicorn.error": {
+                "handlers": ["default"], 
+                "level": "INFO",
+                "propagate": False,
+            },
+            "uvicorn.access": {
+                "handlers": ["default"],
+                "level": "WARNING", 
+                "propagate": False,
+            },
+        },
+    }
+    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
         reload=settings.debug,
+        log_config=log_config,
     )
