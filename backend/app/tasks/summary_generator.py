@@ -5,10 +5,10 @@
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import get_settings
@@ -113,7 +113,7 @@ class SummaryGenerator:
                 await self._update_summary_status(
                     session, summary,
                     status=SummaryStatus.IN_PROGRESS,
-                    started_at=datetime.now()
+                    started_at=datetime.now(timezone.utc)
                 )
                 await session.commit()
                 
@@ -152,7 +152,7 @@ class SummaryGenerator:
         started_at: Optional[datetime] = None
     ) -> None:
         """更新摘要状态"""
-        update_data = {"status": status}
+        update_data: dict[str, Any] = {"status": status}
         if started_at:
             update_data["started_at"] = started_at
             
@@ -166,7 +166,7 @@ class SummaryGenerator:
         result_data: dict[str, Any]
     ) -> None:
         """更新摘要成功状态"""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         stmt = update(Summary).where(Summary.id == summary.id).values(
             status=SummaryStatus.COMPLETED,
             content=result_data.get("content"),
@@ -187,7 +187,7 @@ class SummaryGenerator:
         result_data: dict[str, Any]
     ) -> None:
         """更新摘要失败状态"""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         new_retry_count = summary.retry_count + 1
         
         # 判断是否达到最大重试次数
@@ -261,6 +261,7 @@ class SummaryGenerator:
                     model=model,
                     lang=lang,
                     status=SummaryStatus.PENDING,
+                    created_at=func.now(),
                     retry_count=0,
                     max_retries=self.settings.ai_summary_max_retries
                 )
@@ -275,6 +276,65 @@ class SummaryGenerator:
         except Exception as e:
             logger.error(f"Error creating summary task for item {item_id}: {e}")
             return None
+    
+    async def create_summary_tasks_for_missing_items(
+        self,
+        source_id: Optional[str] = None,
+        model: str = "gemini-2.5-flash", 
+        lang: str = "zh-CN"
+    ) -> dict[str, Any]:
+        """为所有没有摘要的文章批量创建摘要任务"""
+        if not model:
+            model = self.settings.gemini_model
+            
+        try:
+            async with AsyncSessionLocal() as session:
+                # 查找所有没有摘要的文章 
+                subquery = select(Summary.id).where(Summary.item_id == Item.id).exists()
+                stmt = select(Item.id).where(~subquery)
+                
+                # 如果指定了数据源，只处理该数据源的文章
+                if source_id:
+                    stmt = stmt.where(Item.source_id == source_id)
+                
+                result = await session.execute(stmt)
+                missing_item_ids = [row[0] for row in result.fetchall()]
+                
+                if not missing_item_ids:
+                    logger.info("未找到没有摘要的文章")
+                    return {"created_count": 0, "total_missing": 0}
+                
+                logger.info(f"找到 {len(missing_item_ids)} 篇文章没有摘要")
+                
+                # 批量创建摘要任务
+                summary_tasks: List[Summary] = []
+                for item_id in missing_item_ids:
+                    summary = Summary(
+                        item_id=item_id,
+                        model=model,
+                        lang=lang,
+                        status=SummaryStatus.PENDING,
+                        created_at=func.now(),
+                        retry_count=0,
+                        max_retries=self.settings.ai_summary_max_retries
+                    )
+                    summary_tasks.append(summary)
+                
+                session.add_all(summary_tasks)
+                await session.commit()
+                
+                created_count = len(summary_tasks)
+                logger.info(f"创建了 {created_count} 个摘要任务")
+                
+                return {
+                    "created_count": created_count,
+                    "total_missing": len(missing_item_ids),
+                    "source_id": source_id
+                }
+                
+        except Exception as e:
+            logger.error(f"创建摘要任务失败: {e}")
+            return {"created_count": 0, "total_missing": 0, "error": str(e)}
 
 
 # 全局摘要生成器实例

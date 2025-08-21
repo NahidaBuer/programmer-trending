@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.cron import CronTrigger
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 
 from ..core.config import get_settings
@@ -43,53 +42,67 @@ class TaskScheduler:
             
             # 启动调度器
             self.scheduler.start()
-            logger.info("Task scheduler started successfully")
+            logger.info("调度器启动成功")
             
         except Exception as e:
-            logger.error(f"Failed to start scheduler: {e}")
+            logger.error(f"启动调度器失败: {e}")
             raise
     
     async def stop(self) -> None:
         """停止调度器"""
         try:
             self.scheduler.shutdown(wait=True)
-            logger.info("Task scheduler stopped")
+            logger.info("调度器停止成功")
         except Exception as e:
-            logger.error(f"Error stopping scheduler: {e}")
+            logger.error(f"停止调度器失败: {e}")
             
     async def _add_crawl_jobs(self) -> None:
         """添加爬取任务"""
-        # 定期爬取所有数据源
         crawl_interval = self.settings.crawl_interval_minutes
+        added_jobs: list[str] = []
         
-        self.scheduler.add_job(
-            self.crawl_all_sources_job,
-            trigger=IntervalTrigger(minutes=crawl_interval),
-            id="crawl_all_sources",
-            name="Crawl All Sources",
-            max_instances=1,  # 防止重复执行
-            replace_existing=True,
-            next_run_time=datetime.now() + timedelta(seconds=30),  # 30秒后开始首次执行
-        )
+        # 根据配置添加定时爬虫任务
+        if self.settings.enable_crawl_scheduler:
+            self.scheduler.add_job(
+                self.crawl_all_sources_job,
+                trigger=IntervalTrigger(minutes=crawl_interval),
+                id="crawl_all_sources",
+                name="Crawl All Sources",
+                max_instances=1,  # 防止重复执行
+                replace_existing=True,
+                next_run_time=datetime.now() + timedelta(seconds=30),  # 30秒后开始首次执行
+            )
+            added_jobs.append(f"爬取任务 (间隔 {crawl_interval} 分钟)")
+            logger.info(f"✅ 已启用定时爬虫任务，间隔 {crawl_interval} 分钟")
+        else:
+            logger.info("❌ 定时爬虫任务已禁用 (ENABLE_CRAWL_SCHEDULER=false)")
         
-        # 定期生成摘要（每15分钟执行一次）
-        self.scheduler.add_job(
-            self.generate_summaries_job,
-            trigger=IntervalTrigger(minutes=15),
-            id="generate_summaries",
-            name="Generate AI Summaries",
-            max_instances=1,  # 防止重复执行
-            replace_existing=True,
-            next_run_time=datetime.now() + timedelta(minutes=2),  # 2分钟后开始首次执行
-        )
+        # 根据配置添加定时摘要生成任务
+        if self.settings.enable_summary_scheduler:
+            self.scheduler.add_job(
+                self.generate_summaries_job,
+                trigger=IntervalTrigger(minutes=crawl_interval),
+                id="generate_summaries", 
+                name="Generate AI Summaries",
+                max_instances=1,  # 防止重复执行
+                replace_existing=True,
+                next_run_time=datetime.now() + timedelta(minutes=2),  # 2分钟后开始首次执行
+            )
+            added_jobs.append(f"摘要生成任务 (间隔 {crawl_interval} 分钟)")
+            logger.info(f"✅ 已启用定时AI摘要任务，间隔 {crawl_interval} 分钟")
+        else:
+            logger.info("❌ 定时AI摘要任务已禁用 (ENABLE_SUMMARY_SCHEDULER=false)")
         
-        logger.info(f"Added crawl job with {crawl_interval} minute interval")
-        logger.info("Added summary generation job with 15 minute interval")
+        # 汇总信息
+        if added_jobs:
+            logger.info(f"📅 已添加定时任务: {', '.join(added_jobs)}")
+        else:
+            logger.warning("⚠️  所有定时任务都已禁用，调度器将空运行")
         
     async def crawl_all_sources_job(self) -> None:
         """爬取所有数据源的定时任务"""
         try:
-            logger.info("Starting scheduled crawl of all sources")
+            logger.info("开始定时爬取所有数据源")
             start_time = datetime.now()
             
             results = await crawl_service.crawl_all_sources(limit_per_source=30)
@@ -100,21 +113,21 @@ class TaskScheduler:
             duration = (end_time - start_time).total_seconds()
             
             logger.info(
-                f"Crawl completed: {total_new_items} new items from "
-                f"{len(results)} sources in {duration:.2f}s"
+                f"爬取完成: {total_new_items} 个新文章来自 "
+                f"{len(results)} 个数据源，耗时 {duration:.2f} 秒"
             )
             
             # 记录各数据源的统计
             for source_id, items in results.items():
-                logger.info(f"  {source_id}: {len(items)} new items")
+                logger.info(f"  {source_id}: {len(items)} 个新文章")
                 
         except Exception as e:
-            logger.error(f"Scheduled crawl failed: {e}")
+            logger.error(f"定时爬取失败: {e}")
             
     async def generate_summaries_job(self) -> None:
         """生成摘要的定时任务"""
         try:
-            logger.info("Starting scheduled summary generation")
+            logger.info("开始定时生成摘要")
             start_time = datetime.now()
             
             await summary_generator.start_generation_cycle()
@@ -122,10 +135,10 @@ class TaskScheduler:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
             
-            logger.info(f"Summary generation completed in {duration:.2f}s")
+            logger.info(f"摘要生成完成，耗时 {duration:.2f} 秒")
             
         except Exception as e:
-            logger.error(f"Scheduled summary generation failed: {e}")
+            logger.error(f"定时生成摘要失败: {e}")
             
     async def trigger_manual_crawl(self, source_id: str | None = None) -> Dict[str, Any]:
         """
@@ -141,11 +154,11 @@ class TaskScheduler:
             start_time = datetime.now()
             
             if source_id:
-                logger.info(f"Manual crawl triggered for source: {source_id}")
+                logger.info(f"手动触发爬取任务，数据源: {source_id}")
                 new_items = await crawl_service.crawl_single_source(source_id)
                 results = {source_id: new_items}
             else:
-                logger.info("Manual crawl triggered for all sources")
+                logger.info("手动触发爬取任务，所有数据源")
                 results = await crawl_service.crawl_all_sources()
                 
             total_new_items = sum(len(items) for items in results.values())
@@ -163,7 +176,7 @@ class TaskScheduler:
             }
             
         except Exception as e:
-            logger.error(f"Manual crawl failed: {e}")
+            logger.error(f"手动触发爬取任务失败: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -181,7 +194,7 @@ class TaskScheduler:
             执行结果统计
         """
         try:
-            logger.info("Manual summary generation triggered")
+            logger.info("手动触发摘要生成任务")
             start_time = datetime.now()
             
             await summary_generator.start_generation_cycle()
@@ -196,7 +209,7 @@ class TaskScheduler:
             }
             
         except Exception as e:
-            logger.error(f"Manual summary generation failed: {e}")
+            logger.error(f"手动触发摘要生成任务失败: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -206,7 +219,7 @@ class TaskScheduler:
     
     def get_job_status(self) -> Dict[str, Any]:
         """获取任务状态信息"""
-        jobs = []
+        jobs: list[dict[str, Any]] = []
         for job in self.scheduler.get_jobs():
             jobs.append({
                 "id": job.id,
@@ -217,7 +230,13 @@ class TaskScheduler:
             
         return {
             "scheduler_running": self.scheduler.running,
-            "jobs": jobs
+            "jobs": jobs,
+            "configuration": {
+                "crawl_scheduler_enabled": self.settings.enable_crawl_scheduler,
+                "summary_scheduler_enabled": self.settings.enable_summary_scheduler,
+                "crawl_interval_minutes": self.settings.crawl_interval_minutes,
+                "summary_concurrency": self.settings.summary_concurrency,
+            }
         }
 
 

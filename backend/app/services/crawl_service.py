@@ -1,11 +1,9 @@
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import logging
-import asyncio
 
 from sqlalchemy import select, exists, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from ..core.database import AsyncSessionLocal
 from ..core.config import get_settings
@@ -105,7 +103,7 @@ class CrawlService:
         # 获取启用的数据源
         enabled_sources = await self._get_enabled_sources()
         
-        results = {}
+        results: Dict[str, List[Item]] = {}
         for source_id in enabled_sources:
             if source_id in self.crawlers:
                 new_items = await self.crawl_single_source(source_id, limit_per_source)
@@ -136,7 +134,7 @@ class CrawlService:
             return []
             
         async with AsyncSessionLocal() as db:
-            new_items = []
+            new_items: list[Item] = []
             
             for crawled_item in crawled_items:
                 try:
@@ -160,8 +158,8 @@ class CrawlService:
                         external_id=crawled_item.external_id,
                         score=crawled_item.score,
                         author=crawled_item.author,
-                        created_at=crawled_item.created_at or datetime.utcnow(),
-                        fetched_at=datetime.utcnow(),
+                        created_at=crawled_item.created_at or func.now(),
+                        fetched_at=func.now(),
                         comments_count=crawled_item.comments_count,
                         tags=crawled_item.tags or []
                     )
@@ -216,7 +214,7 @@ class CrawlService:
             包含各种统计信息的字典
         """
         async with AsyncSessionLocal() as db:
-            stats = {}
+            stats: Dict[str, Any] = {}
             
             # 总条目数
             total_stmt = select(func.count(Item.id))
@@ -233,8 +231,7 @@ class CrawlService:
             stats["by_source"] = {row.source_id: row.count for row in result}
             
             # 最近24小时的条目数
-            from datetime import timedelta
-            yesterday = datetime.utcnow() - timedelta(days=1)
+            yesterday = datetime.now(timezone.utc) - timedelta(days=1)
             recent_stmt = select(func.count(Item.id)).where(Item.fetched_at >= yesterday)
             result = await db.execute(recent_stmt)
             stats["last_24h"] = result.scalar()
@@ -247,7 +244,7 @@ class CrawlService:
             return
             
         try:
-            summary_tasks = []
+            summary_tasks: list[Summary] = []
             for item in items:
                 # 检查是否已存在摘要
                 existing = await db.execute(
@@ -262,6 +259,7 @@ class CrawlService:
                     model=self.settings.gemini_model,
                     lang="zh-CN",
                     status=SummaryStatus.PENDING,
+                    created_at=func.now(),
                     retry_count=0,
                     max_retries=self.settings.ai_summary_max_retries
                 )

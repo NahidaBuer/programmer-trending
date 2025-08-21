@@ -62,7 +62,7 @@ docker-compose up -d
 - **后端**: FastAPI + Python 3.13 + SQLAlchemy + APScheduler
 - **前端**: React 19 + TypeScript + Vite + Tailwind CSS
 - **数据库**: PostgreSQL (生产) / SQLite (开发)
-- **AI**: DeepSeek API
+- **AI**: Google Gemini API
 - **包管理**: 后端用 `uv`，前端用 `pnpm`
 
 ### 目录结构
@@ -116,7 +116,7 @@ frontend/
 后端通过 `backend/.env` 文件配置：
 
 - `DATABASE_URL`: 数据库连接字符串
-- `DEEPSEEK_API_KEY`: AI API 密钥
+- `GOOGLE_API_KEY`: Google Gemini API 密钥
 - `CRAWL_INTERVAL_MINUTES`: 抓取间隔 (默认 120)
 - `SUMMARY_CONCURRENCY`: 摘要生成并发度
 
@@ -132,7 +132,7 @@ frontend/
 
 ### AI 摘要生成
 
-- 集成 DeepSeek API 生成内容摘要
+- 集成 Google Gemini API 生成内容摘要
 - 异步任务处理，支持并发度控制
 - 摘要结果存储在数据库中
 
@@ -141,7 +141,7 @@ frontend/
 - 热榜列表展示
 - AI 摘要查看
 - 讨论清单功能 (localStorage 存储)
-- LLM 对话代理 (通过后端调用 AI API)
+- LLM 对话代理 (通过后端调用 Google Gemini API)
 
 ## 数据库设计
 
@@ -155,8 +155,19 @@ frontend/
 
 - `.cursor/rules/project-config.mdc`: 详细的项目开发规则和架构设计
 - `backend/pyproject.toml`: Python 项目配置
-- `backend/main.py`: 后端入口文件 (当前为占位符)
+- `backend/main.py`: 后端入口文件
 
 ## 开发状态
 
-项目处于初始化阶段，主要文件结构已建立，但具体实现代码需要根据项目配置规则进行开发。
+项目后端已完成基础开发，包括：
+
+- ✅ FastAPI 应用主体架构
+- ✅ 数据库模型和迁移
+- ✅ Hacker News 爬虫实现
+- ✅ Google Gemini AI 摘要服务
+- ✅ APScheduler 定时任务调度
+- ✅ RESTful API 端点 (sources, items, summaries, chat)
+- ✅ 全局异常处理和请求 ID 中间件
+- ✅ 健康检查接口
+
+前端开发待启动。

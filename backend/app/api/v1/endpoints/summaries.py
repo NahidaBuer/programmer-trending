@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Request, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -168,10 +168,10 @@ async def list_summaries(
     )
 
 
-@router.post("/generate", response_model=APIResponse[dict])
+@router.post("/generate", response_model=APIResponse[Dict[str, Any]])
 async def trigger_summary_generation(
     request: Request
-) -> APIResponse[dict]:
+) -> APIResponse[Dict[str, Any]]:
     """手动触发摘要生成任务"""
     request_id = getattr(request.state, "request_id", "unknown")
     
@@ -182,3 +182,66 @@ async def trigger_summary_generation(
         error=None,
         meta={"requestId": request_id}
     )
+
+
+@router.post("/batch-create", response_model=APIResponse[Dict[str, Any]])
+async def batch_create_summary_tasks(
+    request: Request,
+    source_id: Optional[str] = Query(None, description="指定数据源ID，为空则处理所有数据源"),
+    model: str = Query("gemini-2.5-flash", description="使用的AI模型"),
+    lang: str = Query("zh-CN", description="摘要语言")
+) -> APIResponse[Dict[str, Any]]:
+    """为所有没有摘要的文章批量创建摘要任务"""
+    request_id = getattr(request.state, "request_id", "unknown")
+    
+    result = await summary_generator.create_summary_tasks_for_missing_items(
+        source_id=source_id,
+        model=model, 
+        lang=lang
+    )
+    
+    return APIResponse(
+        data=result,
+        error=None,
+        meta={"requestId": request_id}
+    )
+
+
+@router.post("/batch-create-and-generate", response_model=APIResponse[Dict[str, Any]])
+async def batch_create_and_generate_summaries(
+    request: Request,
+    source_id: Optional[str] = Query(None, description="指定数据源ID，为空则处理所有数据源"),
+    model: str = Query("gemini-2.5-flash", description="使用的AI模型"),
+    lang: str = Query("zh-CN", description="摘要语言")
+) -> APIResponse[Dict[str, Any]]:
+    """批量创建摘要任务并立即开始生成"""
+    request_id = getattr(request.state, "request_id", "unknown")
+    
+    # 先批量创建任务
+    create_result = await summary_generator.create_summary_tasks_for_missing_items(
+        source_id=source_id,
+        model=model,
+        lang=lang
+    )
+    
+    # 如果创建了新任务，立即触发生成
+    if create_result.get("created_count", 0) > 0:
+        generate_result = await task_scheduler.trigger_manual_summary_generation()
+        
+        return APIResponse(
+            data={
+                "batch_create": create_result,
+                "generation_triggered": generate_result
+            },
+            error=None,
+            meta={"requestId": request_id}
+        )
+    else:
+        return APIResponse(
+            data={
+                "batch_create": create_result,
+                "generation_triggered": {"message": "No new tasks to process"}
+            },
+            error=None,
+            meta={"requestId": request_id}
+        )
