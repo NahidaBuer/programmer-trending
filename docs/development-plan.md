@@ -126,52 +126,60 @@
 
 ### 阶段 4: 前端界面开发
 
-#### 4.0 后端 API 优化 (为前端做准备)
+**状态**: ✅ 基本完成 - React 前端基础架构已完成，SWR 数据获取优化完成
 
-- [ ] 修改 `backend/app/models/summary.py` 增加 `translated_title` 字段
-- [ ] 创建 Alembic 迁移脚本添加 `translated_title` 列
-- [ ] 修改 AI 摘要生成逻辑，让 Gemini 返回 JSON 格式: `{"translated_title": "翻译标题", "summary": "摘要内容"}`
-- [ ] 修改 `GET /api/v1/items/` 接口，LEFT JOIN summaries 表，一次性返回文章+摘要数据
-- [ ] 更新 ItemResponse Schema 包含 summary 相关字段
+#### 4.0 后端 API 优化 (为前端做准备) ✅
 
-#### 4.1 前端基础架构
+- [x] 修改 `backend/app/models/summary.py` 增加 `translated_title` 字段
+- [x] 创建 Alembic 迁移脚本添加 `translated_title` 列
+- [x] 修改 AI 摘要生成逻辑，让 Gemini 返回 JSON 格式: `{"translated_title": "翻译标题", "summary": "摘要内容"}`
+- [x] 修改 `GET /api/v1/items/` 接口，LEFT JOIN summaries 表，一次性返回文章+摘要数据
+- [x] 更新 ItemResponse Schema 包含 summary 相关字段
 
-- [ ] 配置 React Router 路由系统 (`/` 首页, `/chat` 聊天页)
-- [ ] 创建 `frontend/src/components/Layout.tsx` 基础布局
-- [ ] 创建 `frontend/src/api/client.ts` API 客户端封装
-- [ ] 设置 TypeScript 类型定义 (`frontend/src/types/`)
+#### 4.1 前端基础架构 ✅
 
-#### 4.2 Header 和导航组件
+- [x] 配置 React Router 路由系统 (`/` 首页, `/chat` 聊天页)
+- [x] 创建 `frontend/src/components/Layout.tsx` 基础布局
+- [x] 创建 `frontend/src/api/client.ts` API 客户端封装
+- [x] 设置 TypeScript 类型定义 (`frontend/src/types/`)
+- [x] 集成 SWR 进行数据获取优化 (替代原始 fetch + useEffect)
 
-- [ ] 创建 `frontend/src/components/Header.tsx` 页面头部
+#### 4.2 Header 和导航组件 ✅
+
+- [x] 创建 `frontend/src/components/Header.tsx` 页面头部
   - 左侧: 数据源切换 Tab (当前仅 Hacker News)
   - 右侧: Chat 按钮 (跳转到 `/chat`)
-- [ ] 创建 `frontend/src/components/SourceTabs.tsx` 数据源切换组件
-- [ ] 实现响应式导航设计
+- [x] 创建 `frontend/src/components/SourceTabs.tsx` 数据源切换组件
+- [x] 实现响应式导航设计
 
-#### 4.3 文章列表和卡片组件
+#### 4.3 文章列表和卡片组件 ✅
 
-- [ ] 创建 `frontend/src/components/ItemCard.tsx` 文章卡片组件
+- [x] 创建 `frontend/src/components/ItemCard.tsx` 文章卡片组件
   - 标题智能显示: 优先显示 `translated_title`，无则回落到原始 `title`
   - 显示 AI 摘要内容 (如有)
   - 显示文章元信息 (分数、作者、时间)
   - 支持点击跳转到原文
-- [ ] 创建 `frontend/src/components/ItemList.tsx` 文章列表组件
+- [x] 创建 `frontend/src/components/ItemList.tsx` 文章列表组件
   - 加载状态和错误处理
   - 保持现有分页逻辑 (传统分页，非无限滚动)
-- [ ] 创建 `frontend/src/pages/Home.tsx` 主页组件
+  - 使用 SWR 优化数据获取和缓存
+- [x] 创建 `frontend/src/pages/Home.tsx` 主页组件
 
-#### 4.4 聊天页面占位符
+#### 4.4 聊天页面占位符 ✅
 
-- [ ] 创建 `frontend/src/pages/Chat.tsx` 简单占位符页面
-- [ ] 实现从 Chat 按钮到聊天页面的路由跳转
+- [x] 创建 `frontend/src/pages/Chat.tsx` 简单占位符页面
+- [x] 实现从 Chat 按钮到聊天页面的路由跳转
 
-#### 4.5 数据获取和状态管理
+#### 4.5 数据获取和状态管理 ✅
 
-- [ ] 实现 API 调用逻辑 (获取文章列表+摘要)
-- [ ] 实现分页状态管理
-- [ ] 实现加载状态和错误处理
-- [ ] 优化响应式设计 (移动端适配)
+- [x] 实现 API 调用逻辑 (获取文章列表+摘要)
+- [x] 实现分页状态管理
+- [x] 实现加载状态和错误处理
+- [x] 优化响应式设计 (移动端适配)
+- [x] **新增**: 集成 SWR 优化数据获取
+  - 自动处理竞态条件和请求取消
+  - 内置缓存机制减少重复请求
+  - 自动重新验证和错误重试
 
 **技术要点**:
 
@@ -235,17 +243,18 @@
 - [x] 基础中间件 (CORS, 请求 ID, 异常处理)
 - [x] 健康检查接口
 
-### 里程碑 1: MVP 版本 (阶段 1-3) 🎯 目标
+### 里程碑 1: MVP 版本 (阶段 1-4) ✅ 已完成 (2025-08-22)
 
 - [x] 基础架构完整
 - [x] HN 数据抓取功能
 - [x] AI 摘要生成
 - [x] 基础 API 接口
-- [x] 简单的前端展示
+- [x] 完整的前端展示界面
+- [x] **新增**: SWR 数据获取优化
 
-### 里程碑 2: 完整版本 (阶段 1-5)
+### 里程碑 2: 完整版本 (阶段 1-5) 🎯 当前目标
 
-- [ ] 完整的前后端功能
+- [x] 完整的前后端功能
 - [ ] 讨论清单功能
 - [ ] AI 对话功能
 - [ ] 搜索和过滤
@@ -271,38 +280,78 @@
 **✅ 已完成**:
 
 - 阶段 1: 项目基础设置 (100%)
-- 阶段 2.1: FastAPI 应用初始化 (100%)
-- 阶段 2: 后端核心功能 (约 25% 完成)
-- 阶段 3: AI 摘要功能
+- 阶段 2: 后端核心功能 (100%)
+- 阶段 3: AI 摘要功能 (100%)
+- 阶段 4: 前端界面开发 (100%)
 
 **🟡 进行中**:
 
-- 阶段 4: 前端界面开发
+- 阶段 5: 其他功能开发 (讨论清单、AI对话、搜索过滤)
 
 **📅 待开始**:
 
-- 阶段 5-6: 其他功能、部署
+- 阶段 6: 优化和部署
 
 ## 风险评估
 
 ### 技术风险
 
-- 数据库性能优化
-- **新增**: 类型安全性 - 当前存在类型标注不完整的问题
+- ~~数据库性能优化~~ ✅ 已通过 API 优化解决
+- ~~类型安全性 - 当前存在类型标注不完整的问题~~ ✅ 已通过 TypeScript 类型定义完善解决
+- **新增**: 数据同步问题 - SWR 缓存可能与后端状态不一致
 
 ### 时间风险
 
-- AI 集成可能需要额外调试时间
-- 前端 UI/UX 可能需要多次迭代
+- ~~AI 集成可能需要额外调试时间~~ ✅ 已完成
+- ~~前端 UI/UX 可能需要多次迭代~~ ✅ 基本界面已完成
 - Docker 部署环境配置
-- **新增**: 数据库迁移可能需要重新生成
+- ~~数据库迁移可能需要重新生成~~ ✅ 已完成所有迁移
 
 ### 缓解措施
 
-- 设置 AI API 调用频率限制
-- 实现完善的错误处理和重试机制
-- 使用现有的成熟组件库
-- **新增**: 定期运行数据库迁移检查
+- ~~设置 AI API 调用频率限制~~ ✅ 已实现
+- ~~实现完善的错误处理和重试机制~~ ✅ 已实现
+- ~~使用现有的成熟组件库~~ ✅ 使用 Tailwind CSS
+- ~~定期运行数据库迁移检查~~ ✅ 已建立流程
+- **新增**: 使用 SWR 的 `mutate` 函数确保数据一致性
+
+## 最新开发成果 (2025-08-22)
+
+### 前端架构完善
+
+- **React 19 + TypeScript**: 现代化前端技术栈
+- **React Router v7**: 完整的路由系统 (`/`, `/chat`)
+- **Tailwind CSS v4**: 最新版本的 CSS 框架
+- **SWR 数据获取**: 解决了原有 useEffect + fetch 的竞态条件问题
+
+### 组件架构
+
+- **Layout + Header**: 响应式布局和导航
+- **SourceTabs**: 数据源切换 (当前支持 Hacker News)
+- **ItemList + ItemCard**: 文章列表和卡片展示
+- **Home + Chat**: 主页和聊天页面 (占位符)
+
+### 技术优化亮点
+
+1. **SWR 集成**: 
+   - 自动处理竞态条件和请求取消
+   - 内置缓存机制减少重复请求
+   - 自动重新验证和错误重试
+
+2. **智能标题显示**: 
+   - 优先显示 AI 翻译的中文标题
+   - 无翻译时回落到原始英文标题
+
+3. **完整的类型安全**: 
+   - 前后端类型定义对齐
+   - TypeScript 严格模式
+   - API 响应格式统一
+
+### 项目当前状态
+
+- **MVP 功能完整**: 用户可以浏览 Hacker News 热榜、查看 AI 摘要
+- **技术债务清理**: 解决了 useEffect 数据获取的问题
+- **代码质量**: 良好的组件分离和类型安全
 
 ## 备注
 
