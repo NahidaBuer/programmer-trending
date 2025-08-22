@@ -126,11 +126,11 @@
 
 ### 阶段 4: 前端界面开发
 
-#### 4.0 后端API优化 (为前端做准备)
+#### 4.0 后端 API 优化 (为前端做准备)
 
-- [ ] 修改 `backend/app/models/summary.py` 增加 `title_zh` 字段
-- [ ] 创建 Alembic 迁移脚本添加 `title_zh` 列
-- [ ] 修改 AI 摘要生成逻辑，让 Gemini 返回 JSON 格式: `{"title_zh": "中文标题", "summary": "中文摘要"}`
+- [ ] 修改 `backend/app/models/summary.py` 增加 `translated_title` 字段
+- [ ] 创建 Alembic 迁移脚本添加 `translated_title` 列
+- [ ] 修改 AI 摘要生成逻辑，让 Gemini 返回 JSON 格式: `{"translated_title": "翻译标题", "summary": "摘要内容"}`
 - [ ] 修改 `GET /api/v1/items/` 接口，LEFT JOIN summaries 表，一次性返回文章+摘要数据
 - [ ] 更新 ItemResponse Schema 包含 summary 相关字段
 
@@ -152,7 +152,7 @@
 #### 4.3 文章列表和卡片组件
 
 - [ ] 创建 `frontend/src/components/ItemCard.tsx` 文章卡片组件
-  - 标题智能显示: 优先显示 `title_zh`，无则回落到原始 `title`
+  - 标题智能显示: 优先显示 `translated_title`，无则回落到原始 `title`
   - 显示 AI 摘要内容 (如有)
   - 显示文章元信息 (分数、作者、时间)
   - 支持点击跳转到原文
@@ -174,10 +174,11 @@
 - [ ] 优化响应式设计 (移动端适配)
 
 **技术要点**:
+
 - **API 优化**: 后端一次性返回文章+摘要，减少前端请求次数
 - **智能回落**: 前端优先显示中文标题，无则显示原标题
 - **分页策略**: 保持传统分页，避免复杂的无限滚动实现
-- **数据结构**: Gemini 返回 `{title_zh, summary}` JSON 格式存储
+- **数据结构**: Gemini 返回 `{translated_title, summary}` JSON 格式存储
 
 **验收标准**: 前端界面美观且功能完整，用户可以正常浏览热榜、查看中文摘要，点击 Chat 按钮跳转到占位符页面。
 
@@ -240,7 +241,7 @@
 - [x] HN 数据抓取功能
 - [x] AI 摘要生成
 - [x] 基础 API 接口
-- [ ] 简单的前端展示
+- [x] 简单的前端展示
 
 ### 里程碑 2: 完整版本 (阶段 1-5)
 

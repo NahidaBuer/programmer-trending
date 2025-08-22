@@ -3,29 +3,35 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import outerjoin
 
 from app.core.database import get_db
 from app.schemas.common import APIResponse, PaginationMeta
-from app.schemas.item import ItemResponse, ItemListResponse
+from app.schemas.item import ItemResponse, ItemWithSummaryResponse, ItemWithSummaryListResponse
 from app.models.item import Item
+from app.models.summary import Summary
 
 router = APIRouter()
 
 
-@router.get("/", response_model=APIResponse[ItemListResponse])
+@router.get("/", response_model=APIResponse[ItemWithSummaryListResponse])
 async def get_items(
     request: Request,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页条目数"),
     source_id: Optional[str] = Query(None, description="数据源ID"),
     db: AsyncSession = Depends(get_db)
-) -> APIResponse[ItemListResponse]:
+) -> APIResponse[ItemWithSummaryListResponse]:
     """获取热榜条目列表"""
     request_id = getattr(request.state, "request_id", "unknown")
     
     try:
-        # 构建基础查询
-        base_query = select(Item).order_by(Item.fetched_at.desc())
+        # 构建带摘要的联合查询 (LEFT JOIN)
+        base_query = select(Item, Summary).select_from(
+            Item.__table__.outerjoin(Summary.__table__, Item.id == Summary.item_id)
+        ).order_by(Item.fetched_at.desc())
+        
+        # 计数查询（只计算Item）
         count_query = select(func.count(Item.id))
         
         # 按数据源过滤
@@ -44,11 +50,12 @@ async def get_items(
         # 获取当前页数据
         items_query = base_query.limit(page_size).offset(offset)
         items_result = await db.execute(items_query)
-        items = items_result.scalars().all()
+        rows = items_result.all()
         
         # 转换为响应模型
-        item_responses = [
-            ItemResponse(
+        item_responses: list[ItemWithSummaryResponse] = []
+        for item, summary in rows:
+            response = ItemWithSummaryResponse(
                 id=item.id,
                 source_id=item.source_id,
                 title=item.title,
@@ -56,10 +63,13 @@ async def get_items(
                 score=item.score,
                 author=item.author,
                 created_at=item.created_at,
-                fetched_at=item.fetched_at
+                fetched_at=item.fetched_at,
+                # 摘要信息（可能为None）
+                summary_content=summary.content if summary else None,
+                translated_title=summary.translated_title if summary else None,
+                summary_status=summary.status if summary else None
             )
-            for item in items
-        ]
+            item_responses.append(response)
         
         # 构建分页信息
         pagination = PaginationMeta(
@@ -72,14 +82,14 @@ async def get_items(
         )
         
         return APIResponse(
-            data=ItemListResponse(items=item_responses, pagination=pagination),
+            data=ItemWithSummaryListResponse(items=item_responses, pagination=pagination),
             error=None,
             meta={"requestId": request_id}
         )
         
     except Exception as e:
         return APIResponse(
-            data=ItemListResponse(items=[], pagination=PaginationMeta(
+            data=ItemWithSummaryListResponse(items=[], pagination=PaginationMeta(
                 page=page, page_size=page_size, total=0, total_pages=0,
                 has_next=False, has_prev=False
             )),

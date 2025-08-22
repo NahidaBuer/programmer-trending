@@ -3,6 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from .common import PaginationMeta
+from .summary import SummaryStatus
 
 
 class ItemBase(BaseModel):
@@ -33,6 +34,27 @@ class ItemResponse(ItemBase):
         from_attributes = True
 
 
+class ItemWithSummaryResponse(ItemBase):
+    """带摘要信息的文章响应模型"""
+    id: int = Field(..., description="条目ID")
+    created_at: datetime = Field(..., description="创建时间")
+    fetched_at: datetime = Field(..., description="抓取时间")
+    
+    # 摘要信息（可能为空）
+    summary_content: Optional[str] = Field(None, description="AI摘要内容")
+    translated_title: Optional[str] = Field(None, description="翻译后的标题")
+    summary_status: Optional[SummaryStatus] = Field(None, description="摘要生成状态")
+
+    class Config:
+        from_attributes = True
+
+
 class ItemListResponse(BaseModel):
     items: List[ItemResponse]
+    pagination: PaginationMeta
+
+
+class ItemWithSummaryListResponse(BaseModel):
+    """带摘要信息的文章列表响应模型"""
+    items: List[ItemWithSummaryResponse]
     pagination: PaginationMeta

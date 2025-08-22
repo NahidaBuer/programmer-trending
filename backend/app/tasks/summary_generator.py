@@ -82,7 +82,17 @@ class SummaryGenerator:
     async def _generate_single_summary(self, summary_id: int) -> bool:
         """生成单个摘要（带并发控制）"""
         async with self.semaphore:
-            return await self._process_summary(summary_id)
+            logger.info(f"Generating summary for {summary_id}")
+            result = await self._process_summary(summary_id)
+            
+            # 为了避免突破速率限制，在任务之间添加短暂延迟
+            # 当前配置为每分钟10个请求，所以至少间隔6秒
+            if self.settings.ai_enable_rate_limiting:
+                delay = 60 / self.settings.ai_rate_limit_per_minute + 1  # 添加1秒缓冲
+                logger.debug(f"Waiting {delay} seconds before next summary generation")
+                await asyncio.sleep(delay)
+            
+            return result
             
     async def _process_summary(self, summary_id: int) -> bool:
         """处理单个摘要生成"""
@@ -170,6 +180,7 @@ class SummaryGenerator:
         stmt = update(Summary).where(Summary.id == summary.id).values(
             status=SummaryStatus.COMPLETED,
             content=result_data.get("content"),
+            translated_title=result_data.get("translated_title"),
             completed_at=now,
             generation_duration_ms=result_data.get("generation_duration_ms"),
             url_retrieval_status=result_data.get("url_retrieval_status"),

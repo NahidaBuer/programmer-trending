@@ -26,6 +26,7 @@ class Summary(Base):
     model = Column(String, nullable=False)  # AI 模型名称，如 "gemini-2.5-flash"
     lang = Column(String, nullable=False, default="zh-CN")  # 语言
     content = Column(Text)  # 摘要内容（状态为COMPLETED时必填）
+    translated_title = Column(String(500))  # 翻译后的标题（对应lang字段的语言）
     
     # 状态管理
     status = Column(Enum(SummaryStatus), default=SummaryStatus.PENDING, nullable=False)

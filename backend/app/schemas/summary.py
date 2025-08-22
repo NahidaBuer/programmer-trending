@@ -42,6 +42,7 @@ class SummaryResponse(BaseModel):
     model: str = Field(..., description="AI 模型名称")
     lang: str = Field(..., description="语言")
     content: Optional[str] = Field(None, description="摘要内容")
+    translated_title: Optional[str] = Field(None, description="翻译后的标题")
     status: SummaryStatus = Field(..., description="生成状态")
     retry_count: int = Field(..., description="重试次数")
     max_retries: int = Field(..., description="最大重试次数")

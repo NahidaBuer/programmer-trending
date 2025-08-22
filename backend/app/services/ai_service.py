@@ -4,20 +4,28 @@ Google Gemini AI 服务
 使用官方 google-genai SDK 实现原生异步 AI 服务
 """
 import asyncio
+import json
 import logging
 import textwrap
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 from collections import deque
 
 from google import genai
 from google.genai import types
+from pydantic import BaseModel, Field
 
 from ..core.config import get_settings
 from ..models.item import Item
 
 logger = logging.getLogger(__name__)
+
+
+class SummaryResult(BaseModel):
+    """AI 摘要生成结果的 Pydantic 模型"""
+    translated_title: Optional[str] = Field(None, description="翻译后的标题，如果翻译失败则为null")
+    summary: Optional[str] = Field(None, description="文章摘要，如果生成失败则为null")
 
 
 class URLRetrievalStatus(str, Enum):
@@ -52,8 +60,8 @@ class GeminiAIService:
         """异步上下文管理器出口"""
         self.client = None
         
-    async def _check_rate_limit(self) -> bool:
-        """检查是否超过速率限制"""
+    async def _check_and_record_rate_limit(self) -> bool:
+        """检查速率限制并记录请求（原子操作）"""
         if not self.settings.ai_enable_rate_limiting:
             return True
             
@@ -72,7 +80,11 @@ class GeminiAIService:
             if len(self.request_times_day) >= self.settings.ai_rate_limit_per_day:
                 logger.warning(f"达到每天请求限制 ({self.settings.ai_rate_limit_per_day})")
                 return False
-                
+            
+            # 通过检查，立即记录本次请求
+            self.request_times_minute.append(now)
+            self.request_times_day.append(now)
+            
             return True
             
     def _cleanup_expired_requests(self, now: datetime) -> None:
@@ -87,15 +99,6 @@ class GeminiAIService:
         while self.request_times_day and self.request_times_day[0] <= day_ago:
             self.request_times_day.popleft()
             
-    async def _record_request(self) -> None:
-        """记录一次请求"""
-        if not self.settings.ai_enable_rate_limiting:
-            return
-            
-        now = datetime.now()
-        async with self._rate_limit_lock:
-            self.request_times_minute.append(now)
-            self.request_times_day.append(now)
             
     async def _wait_for_rate_limit_reset(self) -> None:
         """等待速率限制重置"""
@@ -115,32 +118,42 @@ class GeminiAIService:
         if not self.client:
             raise RuntimeError("Service not initialized. Use 'async with' context manager.")
             
-        # 检查速率限制
-        if not await self._check_rate_limit():
-            return False, {"error": "Rate limit exceeded"}
-        
         max_retries = 3  # 429错误最大重试次数
         retry_count = 0
             
         while retry_count <= max_retries:
             try:
-                # 记录请求
-                await self._record_request()
+                # 检查速率限制并记录请求（原子操作）
+                if not await self._check_and_record_rate_limit():
+                    # 速率限制达到，等待后重试
+                    logger.warning(f"Speed rate limit reached (retry {retry_count+1}/{max_retries+1})")
+                    retry_count += 1
+                    
+                    if retry_count <= max_retries:
+                        await self._wait_for_rate_limit_reset()
+                        continue
+                    else:
+                        return False, {"error": "Rate limit exceeded after max retries"}
                 
                 # 构建提示词
                 prompt = self._build_summary_prompt(item)
                 start_time = datetime.now()
                 
-                # 使用原生异步 API 调用 Gemini
+                # 使用原生异步 API 调用 Gemini（手动JSON解析）
                 response = await self.client.aio.models.generate_content(
                     model=self.settings.gemini_model,
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         tools=[{"url_context": {}}],  # URL 上下文工具
                         max_output_tokens=self.settings.ai_summary_max_length * 10,  # 预留空间
-                        temperature=0.3  # 保持一致性
+                        temperature=0.3,  # 保持一致性
+                        thinking_config=types.ThinkingConfig(
+                            thinking_budget=0, include_thoughts=False
+                        )
                     )
                 )
+
+                logger.info(f"Gemini response: {response}")
                 
                 generation_duration = int((datetime.now() - start_time).total_seconds() * 1000)
                 
@@ -175,14 +188,11 @@ class GeminiAIService:
         max_length = self.settings.ai_summary_max_length
         
         # 基础提示词
-        base_prompt = f"""请用中文总结这个页面的内容，要求：
-        1. 全程用中文回复，不要使用英文总结开头
-        2. 不超过{max_length}字
-        3. 重点突出技术要点和核心内容
-        4. 保持客观和准确
+        base_prompt = f"""Please analyze the content of the page and generate a summary in CHINESE. The summary should be concise and highlight the key technical points and core content. The summary should be no more than {max_length} words. The summary should be objective and accurate. The summary should be returned in JSON format: {{"translated_title": "Chinese title", "summary": "Chinese summary"}}. If you cannot generate a summary, return null for summary, but you must return a valid JSON text with translated_title. YOU MUST RETURN A SINGLE JSON TEXT IN A SINGLE PART. DO NOT RETURN ANY OTHER TEXT, DO NOT RETURN MARKDOWN EITHER.
 
-        页面链接：{item.url}"""
-            
+        Original title: {item.title}
+        Page link: {item.url}"""
+
         return textwrap.dedent(base_prompt)
     
     async def _process_gemini_response(
@@ -201,20 +211,69 @@ class GeminiAIService:
                 
             candidate = response.candidates[0]
             
-            # 提取文本内容
+            # 提取文本内容并手动解析JSON
             if not hasattr(response, 'text') or not response.text:
                 return False, {
                     "error": "No text content in response",
                     "generation_duration_ms": generation_duration
                 }
                 
-            summary_content = response.text.strip()
+            raw_content = response.text.strip()
             
-            if not summary_content:
+            if not raw_content:
                 return False, {
-                    "error": "Empty summary content",
+                    "error": "Empty response content",
                     "generation_duration_ms": generation_duration
                 }
+            
+            # 尝试解析JSON响应
+            try:
+                # 清理可能的markdown格式
+                json_content = raw_content
+                if raw_content.startswith("```json"):
+                    # 移除markdown代码块标记
+                    lines = raw_content.split('\n')
+                    json_lines = []
+                    in_json = False
+                    for line in lines:
+                        if line.strip() == "```json":
+                            in_json = True
+                            continue
+                        elif line.strip() == "```":
+                            break
+                        elif in_json:
+                            json_lines.append(line)
+                    json_content = '\n'.join(json_lines)
+                
+                # 解析JSON
+                parsed_data = json.loads(json_content)
+                
+                # 验证必需的字段
+                if not isinstance(parsed_data, dict):
+                    raise ValueError("Response is not a JSON object")
+                
+                if "translated_title" not in parsed_data or "summary" not in parsed_data:
+                    raise ValueError("Missing required fields: translated_title or summary")
+                
+                translated_title = parsed_data.get("translated_title", "")
+                summary_content = parsed_data.get("summary", "")
+                
+                # 处理null值
+                if translated_title is None:
+                    translated_title = ""
+                if summary_content is None:
+                    summary_content = ""
+                
+                # 至少要有摘要内容才算成功
+                if not summary_content.strip():
+                    logger.warning("AI returned empty summary content")
+                    summary_content = ""  # 允许空摘要，但记录警告
+                
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.warning(f"Failed to parse JSON response, using raw content as summary: {e}")
+                # 回退到原始内容作为摘要，translated_title为空
+                translated_title = ""
+                summary_content = raw_content
             
             # 提取 URL 检索状态（从候选结果的元数据中）
             url_retrieval_status = URLRetrievalStatus.UNKNOWN
@@ -232,6 +291,7 @@ class GeminiAIService:
             
             return True, {
                 "content": summary_content,
+                "translated_title": translated_title,
                 "generation_duration_ms": generation_duration,
                 "url_retrieval_status": url_retrieval_status.value,
                 "response_json": self._response_to_dict(response)
