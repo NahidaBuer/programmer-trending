@@ -1,4 +1,3 @@
-import logging
 from typing import Dict, Any
 from datetime import datetime, timedelta
 
@@ -7,10 +6,11 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 
 from ..core.config import get_settings
+from ..core.logging import get_logger
 from ..services.crawl_service import crawl_service
 from .summary_generator import summary_generator
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TaskScheduler:

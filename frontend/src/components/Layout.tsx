@@ -13,7 +13,7 @@ export default function Layout({
   return (
     <div className="min-h-screen bg-gray-50 max-w-screen-lg mx-auto">
       <Header activeSourceId={activeSourceId} onSourceChange={onSourceChange} />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4">
         <Outlet />
       </main>
     </div>

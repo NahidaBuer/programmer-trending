@@ -1,42 +1,83 @@
-from fastapi import APIRouter, Request, HTTPException
-from app.schemas.common import APIResponse
-from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.ai_service import ai_service
+"""
+流式聊天 API 端点
+
+支持匿名用户（限流）和用户自己API key两种模式
+"""
+from fastapi import APIRouter, Request, HTTPException, Header
+from fastapi.responses import StreamingResponse
+import json
+import logging
+from app.services.chat_service import chat_service, ChatMessage
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-
-@router.post("/", response_model=APIResponse[ChatResponse])
-async def chat(
+@router.post("/stream")
+async def chat_stream_anonymous(
     request: Request,
-    chat_request: ChatRequest
-) -> APIResponse[ChatResponse]:
-    """AI 对话接口"""
-    request_id = getattr(request.state, "request_id", "unknown")
+    message: ChatMessage
+) -> StreamingResponse:
+    """匿名用户流式聊天接口（使用服务器API key + 全站限流）"""
     
-    try:
-        async with ai_service:
-            success, result_data = await ai_service.generate_chat_response(
-                message=chat_request.message,
-                context_url=chat_request.context_url
-            )
-            
-        if not success:
-            raise HTTPException(
-                status_code=500, 
-                detail=f"AI service error: {result_data.get('error', 'Unknown error')}"
-            )
-            
-        data = ChatResponse(
-            reply=result_data["reply"],
-            context_url=chat_request.context_url
+    async def generate():
+        try:
+            async for chunk in chat_service.stream_chat_anonymous(message):
+                logger.info(f"chunk: {chunk}")
+                yield chunk
+        except Exception as e:
+            # 错误处理
+            error_data = json.dumps({"error": f"服务器错误: {str(e)}"})
+            yield f'data: {error_data}\n\n'
+    
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+        }
+    )
+
+
+@router.post("/stream/user-key")
+async def chat_stream_with_user_key(
+    request: Request,
+    message: ChatMessage,
+    x_api_key: str = Header(alias="X-API-Key")
+) -> StreamingResponse:
+    """用户自己API key的流式聊天接口（无限流）"""
+    
+    if not x_api_key:
+        raise HTTPException(
+            status_code=400, 
+            detail="Missing X-API-Key header"
         )
-        
-        return APIResponse(
-            data=data,
-            error=None,
-            meta={"requestId": request_id}
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    async def generate():
+        try:
+            async for chunk in chat_service.stream_chat_with_user_key(message, x_api_key):
+                yield chunk
+        except Exception as e:
+            # 错误处理
+            error_data = json.dumps({"error": f"服务器错误: {str(e)}"})
+            yield f'data: {error_data}\n\n'
+    
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+        }
+    )
+
+
+@router.get("/limits")
+async def get_rate_limits(request: Request):
+    """获取当前限流状态"""
+    # 简单返回限制信息
+    return {
+        "global_limit": "5 requests per 10 minutes",
+    }

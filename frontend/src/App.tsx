@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import Home from './pages/Home';
-import Chat from './pages/Chat';
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Home from "./pages/Home";
+import Chat from "./pages/Chat";
 
 function App() {
   const [activeSourceId, setActiveSourceId] = useState<string>();
@@ -10,10 +10,10 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            <Layout 
+            <Layout
               activeSourceId={activeSourceId}
               onSourceChange={setActiveSourceId}
             />

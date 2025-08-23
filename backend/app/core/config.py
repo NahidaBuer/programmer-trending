@@ -42,8 +42,12 @@ class Settings(BaseSettings):
     enable_crawl_scheduler: bool = Field(default=True)    # 是否启用定时爬虫任务
     enable_summary_scheduler: bool = Field(default=True)  # 是否启用定时AI摘要任务
     
+    # CORS Configuration  
+    cors_allow_origins: str = Field(default="http://localhost:5173,http://127.0.0.1:5173")
+    cors_allow_credentials: bool = Field(default=True)
+    
     # Logging
-    log_level: str = Field(default="INFO")
+    log_level: str = Field(default="DEBUG")
 
 
 @lru_cache()

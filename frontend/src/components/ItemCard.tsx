@@ -65,19 +65,32 @@ export default function ItemCard({ item }: ItemCardProps) {
         {item.translated_title?.trim() &&
           item.translated_title !== item.title && (
             <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-              {item.title}
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-600"
+              >
+                {item.title}
+              </a>
             </p>
           )}
       </div>
 
       {/* AI 摘要 */}
-      {item.summary_content && (
+      {(item.summary_content && (
         <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
           <div className="flex items-center mb-2">
             <span className="text-sm font-medium text-blue-400">AI 摘要</span>
           </div>
           <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
             {item.summary_content}
+          </p>
+        </div>
+      )) || (
+        <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-100">
+          <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
+            AI 摘要暂不可用，可能受到源站严格反爬限制
           </p>
         </div>
       )}

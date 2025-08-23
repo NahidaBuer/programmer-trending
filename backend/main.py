@@ -1,3 +1,4 @@
+import logging
 import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Callable, Any, Dict
@@ -8,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
-from app.core.logging import setup_logging
+from app.core.logging import setup_logging, get_uvicorn_log_config
 from app.schemas.common import APIResponse
 from app.tasks.scheduler import task_scheduler
 
@@ -44,10 +45,11 @@ def create_app() -> FastAPI:
     )
     
     # 添加 CORS 中间件
+    cors_origins = [origin.strip() for origin in settings.cors_allow_origins.split(",") if origin.strip()]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # 前端开发服务器
-        allow_credentials=True,
+        allow_origins=cors_origins,
+        allow_credentials=settings.cors_allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -90,55 +92,21 @@ def create_app() -> FastAPI:
     
     return app
 
-
 app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
     settings = get_settings()
     
-    # 设置日志（确保在 uvicorn 启动前配置）
-    setup_logging()
-    
-    # uvicorn 日志配置
-    log_config = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                "use_colors": True,
-            },
-        },
-        "handlers": {
-            "default": {
-                "formatter": "default",
-                "class": "logging.StreamHandler",
-                "stream": "ext://sys.stdout",
-            },
-        },
-        "root": {
-            "level": settings.log_level.upper(),
-            "handlers": ["default"],
-        },
-        "loggers": {
-            "uvicorn": {
-                "handlers": ["default"],
-                "level": "INFO",
-                "propagate": False,
-            },
-            "uvicorn.error": {
-                "handlers": ["default"], 
-                "level": "INFO",
-                "propagate": False,
-            },
-            "uvicorn.access": {
-                "handlers": ["default"],
-                "level": "WARNING", 
-                "propagate": False,
-            },
-        },
-    }
+    # 获取 uvicorn 兼容的日志配置
+    log_config = get_uvicorn_log_config()
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting server...")
+    logger.debug("Starting server...")
+    logger.warning("Starting server...")
+    logger.error("Starting server...")
+    logger.critical("Starting server...")
     
     uvicorn.run(
         "main:app",

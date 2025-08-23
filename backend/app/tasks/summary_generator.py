@@ -15,7 +15,7 @@ from ..core.config import get_settings
 from ..core.database import AsyncSessionLocal
 from ..models.item import Item
 from ..models.summary import Summary, SummaryStatus
-from ..services.ai_service import ai_service
+from ..services.summary_service import summary_service
 
 logger = logging.getLogger(__name__)
 
@@ -128,8 +128,8 @@ class SummaryGenerator:
                 await session.commit()
                 
                 # 生成摘要
-                async with ai_service:
-                    success, result_data = await ai_service.generate_summary(item)
+                async with summary_service:
+                    success, result_data = await summary_service.generate_summary(item)
                     
                 if success:
                     # 成功：更新摘要内容

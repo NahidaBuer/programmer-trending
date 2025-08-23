@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from .config import get_settings
 
@@ -76,3 +76,80 @@ def setup_logging(
 def get_logger(name: str) -> logging.Logger:
     """获取指定名称的日志器"""
     return logging.getLogger(name)
+
+
+def get_uvicorn_log_config() -> dict[str, Any]:
+    """获取 uvicorn 兼容的日志配置"""
+    settings = get_settings()
+    log_level = settings.log_level.upper()
+
+    print(log_level) # WARNING
+    
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "use_colors": False,  # uvicorn 会处理颜色
+            },
+            "colored": {
+                "()": "app.core.logging.ColoredFormatter",
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            },
+        },
+        "handlers": {
+            "default": {
+                "formatter": "colored",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+            },
+        },
+        "loggers": {
+            "": {  # root logger
+                "level": log_level,
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "uvicorn": {
+                "level": "INFO",
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "uvicorn.access": {
+                "level": "WARNING",
+                "handlers": ["default"], 
+                "propagate": False,
+            },
+            "uvicorn.error": {
+                "level": "INFO",
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "sqlalchemy.engine": {
+                "level": "INFO" if settings.debug else "WARNING",
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "sqlalchemy.pool": {
+                "level": "WARNING",
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "httpx": {
+                "level": "WARNING",
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "apscheduler": {
+                "level": "INFO",
+                "handlers": ["default"],
+                "propagate": False,
+            },
+            "app": {
+                "level": log_level,
+                "handlers": ["default"],
+                "propagate": False,
+            },
+        },
+    }

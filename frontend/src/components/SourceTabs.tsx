@@ -1,13 +1,15 @@
-import { useEffect } from 'react';
-import { useSources } from '../hooks/useSWR';
-import type { Source } from '../types/api';
+import { useEffect } from "react";
+import { useSources } from "../hooks/useSWR";
 
 interface SourceTabsProps {
   activeSourceId?: string;
   onSourceChange: (sourceId: string) => void;
 }
 
-export default function SourceTabs({ activeSourceId, onSourceChange }: SourceTabsProps) {
+export default function SourceTabs({
+  activeSourceId,
+  onSourceChange,
+}: SourceTabsProps) {
   const { sources, loading, error } = useSources();
 
   // 如果没有选中的数据源，默认选择第一个
@@ -27,11 +29,7 @@ export default function SourceTabs({ activeSourceId, onSourceChange }: SourceTab
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-sm">
-        加载数据源失败
-      </div>
-    );
+    return <div className="text-red-600 text-sm">加载数据源失败</div>;
   }
 
   if (!sources || sources.length === 0) {
@@ -46,8 +44,8 @@ export default function SourceTabs({ activeSourceId, onSourceChange }: SourceTab
           onClick={() => onSourceChange(source.id)}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeSourceId === source.id
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
           }`}
         >
           {source.name}

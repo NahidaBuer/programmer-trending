@@ -5,7 +5,6 @@ Google Gemini AI 服务
 """
 import asyncio
 import json
-import logging
 import textwrap
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, Tuple
@@ -17,9 +16,10 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 from ..core.config import get_settings
+from ..core.logging import get_logger
 from ..models.item import Item
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SummaryResult(BaseModel):
@@ -35,7 +35,7 @@ class URLRetrievalStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class GeminiAIService:
+class GeminiSummaryService:
     """Google Gemini AI 服务（使用官方异步 SDK）"""
     
     def __init__(self):
@@ -387,4 +387,4 @@ class GeminiAIService:
 
 
 # 全局 AI 服务实例
-ai_service = GeminiAIService()
+summary_service = GeminiSummaryService()
