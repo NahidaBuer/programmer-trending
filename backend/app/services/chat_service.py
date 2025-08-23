@@ -5,7 +5,7 @@ Google Gemini 流式聊天服务
 """
 import json
 import time
-from typing import AsyncGenerator, Optional, Dict, Any
+from typing import AsyncGenerator, Dict, Any
 
 from google import genai
 from google.genai import types
@@ -20,7 +20,6 @@ logger = get_logger(__name__)
 class ChatMessage(BaseModel):
     """聊天消息模型"""
     content: str
-    context_url: Optional[str] = None
 
 
 class RateLimiter:
@@ -65,26 +64,16 @@ class ChatService:
         self.settings = get_settings()
         self.rate_limiter = RateLimiter()
     
-    def _build_chat_config(self, context_url: Optional[str] = None) -> types.GenerateContentConfig:
+    def _build_chat_config(self) -> types.GenerateContentConfig:
         """构建聊天配置"""
         config = types.GenerateContentConfig(
+            tools=[{"url_context": {}}],  # URL 上下文工具
             temperature=0.7,  # 对话更灵活一些
             top_p=0.95,
             top_k=40,
         )
         
-        # 如果有上下文URL，添加URL上下文工具
-        if context_url:
-            config.tools = [{"url_context": {}}]
-        
         return config
-    
-    def _build_chat_contents(self, message: ChatMessage) -> str:
-        """构建聊天内容"""
-        if message.context_url:
-            return f"基于以下页面内容回答问题：{message.context_url}\n\n问题：{message.content}"
-        
-        return message.content
     
     async def stream_chat_anonymous(
         self, 
@@ -128,8 +117,8 @@ class ChatService:
             client = genai.Client(api_key=api_key)
             
             # 构建请求参数
-            contents = self._build_chat_contents(message)
-            config = self._build_chat_config(message.context_url)
+            contents = message.content
+            config = self._build_chat_config()
             model = self.settings.gemini_model or "gemini-2.5-flash"
             
             logger.info(f"Starting streaming chat with model: {model}")

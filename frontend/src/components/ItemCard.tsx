@@ -82,14 +82,14 @@ export default function ItemCard({ item }: ItemCardProps) {
           <div className="flex items-center mb-2">
             <span className="text-sm font-medium text-blue-400">AI 摘要</span>
           </div>
-          <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
+          <p className="text-gray-700 text-sm leading-relaxed">
             {item.summary_content}
           </p>
         </div>
       )) ||
         (!summaryStatus && (
           <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-100">
-            <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
+            <p className="text-gray-700 text-sm leading-relaxed">
               AI 摘要暂不可用，可能受到源站严格反爬限制
             </p>
           </div>
@@ -136,7 +136,7 @@ export default function ItemCard({ item }: ItemCardProps) {
         {/* 时间 */}
         <a href={item.url} target="_blank" rel="noopener noreferrer">
           <span className="hover:text-blue-600">
-            {formatTimeAgo(item.fetched_at)}
+            {formatTimeAgo(item.created_at)}
           </span>
         </a>
       </div>

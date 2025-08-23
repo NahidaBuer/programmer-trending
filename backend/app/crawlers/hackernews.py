@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from .base import BaseCrawler, CrawledItem
@@ -40,7 +40,7 @@ class HackerNewsCrawler(BaseCrawler):
             logger.info(f"Got {len(story_ids)} story IDs from HN")
             
             # 并发获取每个故事的详情
-            items = []
+            items: list[CrawledItem] = []
             for story_id in story_ids:
                 item = await self.fetch_item_details(str(story_id))
                 if item:
@@ -97,7 +97,7 @@ class HackerNewsCrawler(BaseCrawler):
                 external_id=external_id,
                 score=data.get("score"),
                 author=data.get("by"),
-                created_at=datetime.fromtimestamp(data["time"]) if "time" in data else None,
+                created_at=datetime.fromtimestamp(data["time"], tz=timezone.utc) if "time" in data else None,
                 comments_count=data.get("descendants"),
             )
             
@@ -129,7 +129,7 @@ class HackerNewsCrawler(BaseCrawler):
             logger.info(f"Got {len(story_ids)} Ask HN story IDs")
             
             # 并发获取每个故事的详情
-            items = []
+            items: list[CrawledItem] = []
             for story_id in story_ids:
                 item = await self.fetch_item_details(str(story_id))
                 if item:
@@ -167,7 +167,7 @@ class HackerNewsCrawler(BaseCrawler):
             logger.info(f"Got {len(story_ids)} Show HN story IDs")
             
             # 并发获取每个故事的详情
-            items = []
+            items: list[CrawledItem] = []
             for story_id in story_ids:
                 item = await self.fetch_item_details(str(story_id))
                 if item:

@@ -21,7 +21,7 @@ export function useChat(options: ChatOptions = {}): ChatHookReturn {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
-    async (content: string, contextUrl?: string) => {
+    async (content: string) => {
       if (isLoading) return;
 
       // 取消之前的请求
@@ -72,7 +72,6 @@ export function useChat(options: ChatOptions = {}): ChatHookReturn {
 
         const requestBody = {
           content,
-          context_url: contextUrl,
         };
 
         // 发起 SSE 请求

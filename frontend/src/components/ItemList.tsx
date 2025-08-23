@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useItems } from "../hooks/useSWR";
+import { useFilters } from "../contexts/FiltersContext";
 import ItemCard from "./ItemCard";
 import type { PaginationMeta } from "../types/api";
 
@@ -102,12 +103,17 @@ function LoadingSkeleton() {
 
 export default function ItemList({ sourceId }: ItemListProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const { getAPIParams } = useFilters();
+
+  // 获取筛选器的API参数
+  const apiParams = getAPIParams();
 
   // 使用 SWR 获取文章列表
   const { items, pagination, loading, error, mutate } = useItems({
     page: currentPage,
     page_size: 20,
     source_id: sourceId,
+    ...apiParams,
   });
 
   // 翻页处理
@@ -117,10 +123,10 @@ export default function ItemList({ sourceId }: ItemListProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 数据源切换时重置页码
+  // 数据源切换或筛选条件变化时重置页码
   useEffect(() => {
     setCurrentPage(1);
-  }, [sourceId]);
+  }, [sourceId, apiParams.days, apiParams.has_summary, apiParams.sort_by]);
 
   const handleRetry = () => {
     mutate();

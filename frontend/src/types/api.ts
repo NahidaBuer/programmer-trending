@@ -61,7 +61,6 @@ export interface Source {
 // 聊天相关
 export interface ChatMessage {
   content: string;
-  context_url?: string;
 }
 
 export interface ChatResponse {

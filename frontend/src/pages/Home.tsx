@@ -1,4 +1,6 @@
+import ItemFilters from "../components/ItemFilters";
 import ItemList from "../components/ItemList";
+import { FiltersProvider } from "../contexts/FiltersContext";
 
 interface HomeProps {
   activeSourceId?: string;
@@ -16,7 +18,11 @@ export default function Home({ activeSourceId }: HomeProps) {
         </p>
       </div>
 
-      <ItemList sourceId={activeSourceId} />
+      <FiltersProvider>
+        {/* 筛选器 */}
+        <ItemFilters />
+        <ItemList sourceId={activeSourceId} />
+      </FiltersProvider>
     </div>
   );
 }

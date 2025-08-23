@@ -177,7 +177,7 @@ class GeminiSummaryService:
                         return False, {"error": f"Rate limit exceeded after {max_retries} retries: {error_str}"}
                 else:
                     # 其他错误不重试
-                    logger.error(f"Error generating summary for item {item.id}: {e}")
+                    logger.error(f"Error generating summary for item {item.id}: {error_str}")
                     return False, {"error": error_str}
         
         # 不应该到达这里

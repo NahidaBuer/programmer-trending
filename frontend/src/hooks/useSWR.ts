@@ -26,7 +26,10 @@ export function useItems(
     page?: number;
     page_size?: number;
     source_id?: string;
-  } = {}
+    days?: number;
+    has_summary?: boolean;
+    sort_by: "score" | "time";
+  } = { sort_by: "score" }
 ) {
   const cacheKey = `items-${JSON.stringify(params)}`;
 

@@ -1,17 +1,8 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
-from enum import Enum
 from pydantic import BaseModel, Field
 
-
-class SummaryStatus(str, Enum):
-    """摘要生成状态枚举"""
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress" 
-    COMPLETED = "completed"
-    FAILED = "failed"
-    PERMANENTLY_FAILED = "permanently_failed"
-    SKIPPED = "skipped"
+from app.models.summary import SummaryStatus
 
 
 class SummaryBase(BaseModel):

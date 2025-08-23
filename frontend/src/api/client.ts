@@ -53,7 +53,10 @@ export const itemsApi = {
       page?: number;
       page_size?: number;
       source_id?: string;
-    } = {}
+      days?: number;
+      has_summary?: boolean;
+      sort_by: "score" | "time";
+    } = { sort_by: "score" }
   ): Promise<APIResponse<ItemWithSummaryListResponse>> {
     const searchParams = new URLSearchParams();
 
@@ -61,6 +64,10 @@ export const itemsApi = {
     if (params.page_size)
       searchParams.set("page_size", params.page_size.toString());
     if (params.source_id) searchParams.set("source_id", params.source_id);
+    if (params.days) searchParams.set("days", params.days.toString());
+    if (params.has_summary !== undefined) 
+      searchParams.set("has_summary", params.has_summary.toString());
+    searchParams.set("sort_by", params.sort_by);
 
     const query = searchParams.toString();
     const endpoint = `/items${query ? `?${query}` : ""}`;

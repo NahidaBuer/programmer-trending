@@ -1,5 +1,6 @@
 import math
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Literal, Optional
 from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +9,7 @@ from app.core.database import get_db
 from app.schemas.common import APIResponse, PaginationMeta
 from app.schemas.item import ItemResponse, ItemWithSummaryResponse, ItemWithSummaryListResponse
 from app.models.item import Item
-from app.models.summary import Summary
+from app.models.summary import Summary, SummaryStatus
 
 router = APIRouter()
 
@@ -19,6 +20,9 @@ async def get_items(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页条目数"),
     source_id: Optional[str] = Query(None, description="数据源ID"),
+    days: Optional[int] = Query(None, ge=1, description="显示最近N天的新闻，不传则显示全部"),
+    has_summary: Optional[bool] = Query(None, description="是否筛选摘要：true=仅有摘要，false=仅无摘要，不传=全部"),
+    sort_by: Literal["score", "time"] = Query("score", description="排序方式：score=按点赞数，time=按时间"),
     db: AsyncSession = Depends(get_db)
 ) -> APIResponse[ItemWithSummaryListResponse]:
     """获取热榜条目列表"""
@@ -28,7 +32,15 @@ async def get_items(
         # 构建带摘要的联合查询 (LEFT JOIN)
         base_query = select(Item, Summary).select_from(
             Item.__table__.outerjoin(Summary.__table__, Item.id == Summary.item_id)
-        ).order_by(Item.fetched_at.desc())
+        )
+        
+        # 根据排序参数设置排序规则
+        if sort_by == "score":
+            # 按点赞数排序（降序），点赞数相同时按时间排序
+            base_query = base_query.order_by(Item.score.desc(), Item.created_at.desc())
+        else:  # sort_by == "time"
+            # 按时间排序（降序）
+            base_query = base_query.order_by(Item.created_at.desc())
         
         # 计数查询（只计算Item）
         count_query = select(func.count(Item.id))
@@ -37,6 +49,32 @@ async def get_items(
         if source_id:
             base_query = base_query.where(Item.source_id == source_id)
             count_query = count_query.where(Item.source_id == source_id)
+        
+        # 按时间过滤（最近N天）
+        if days:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+            base_query = base_query.where(Item.created_at >= cutoff_date)
+            count_query = count_query.where(Item.created_at >= cutoff_date)
+        
+        # 按摘要状态过滤
+        if has_summary is not None:
+            if has_summary:
+                # 仅显示有摘要的（摘要存在且状态为完成）
+                base_query = base_query.where(Summary.id.isnot(None))
+                base_query = base_query.where(Summary.status == SummaryStatus.COMPLETED)
+                count_query = count_query.select_from(
+                    Item.__table__.join(Summary.__table__, Item.id == Summary.item_id)
+                ).where(Summary.status == SummaryStatus.COMPLETED)
+            else:
+                # 仅显示无摘要的（摘要不存在或状态非完成）
+                base_query = base_query.where(
+                    (Summary.id.is_(None)) | (Summary.status != SummaryStatus.COMPLETED)
+                )
+                count_query = count_query.select_from(
+                    Item.__table__.outerjoin(Summary.__table__, Item.id == Summary.item_id)
+                ).where(
+                    (Summary.id.is_(None)) | (Summary.status != SummaryStatus.COMPLETED)
+                )
             
         # 获取总数
         total_result = await db.execute(count_query)
