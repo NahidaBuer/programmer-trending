@@ -1,19 +1,19 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
-import logging
 
 from sqlalchemy import select, exists, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import AsyncSessionLocal
 from ..core.config import get_settings
+from ..core.logging import get_logger
 from ..models.source import Source
 from ..models.item import Item
 from ..models.summary import Summary, SummaryStatus  
 from ..crawlers.base import BaseCrawler, CrawledItem
 from ..crawlers.hackernews import HackerNewsCrawler
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CrawlService:

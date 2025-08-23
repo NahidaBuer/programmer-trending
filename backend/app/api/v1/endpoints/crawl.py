@@ -17,7 +17,7 @@ async def trigger_crawl(
 ) -> APIResponse[Dict[str, Any]]:
     """手动触发爬取任务"""
     request_id = getattr(request.state, "request_id", "unknown")
-    
+
     try:
         result = await task_scheduler.trigger_manual_crawl(source_id)
         

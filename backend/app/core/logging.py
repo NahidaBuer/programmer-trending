@@ -52,104 +52,27 @@ def setup_logging(
     root_logger.addHandler(handler)
     root_logger.setLevel(getattr(logging, log_level, logging.INFO))
     
-    # 配置特定库的日志级别
-    loggers_config = {
-        "uvicorn": logging.INFO,           # 保持 uvicorn 主要信息
-        "uvicorn.access": logging.WARNING,  # 隐藏访问日志
-        "uvicorn.error": logging.INFO,     # 保持错误信息
-        "sqlalchemy.engine": logging.INFO if settings.debug else logging.WARNING,  # 开发时显示SQL
-        "sqlalchemy.pool": logging.WARNING,
-        "httpx": logging.WARNING,
-        "apscheduler": logging.INFO,       # 保持调度器日志
-        "app": logging.INFO,               # 应用日志
-    }
+    # 强制重新配置关键日志器，确保格式统一（特别是 uvicorn CLI 启动时）
+    critical_loggers = [
+        "uvicorn", 
+        "uvicorn.error", 
+        "uvicorn.access",
+        "sqlalchemy",           # SQLAlchemy 根日志器
+        "sqlalchemy.engine",    # SQL 执行日志
+        "sqlalchemy.pool",      # 连接池日志
+        "apscheduler.scheduler"
+    ]
     
-    for logger_name, logger_level in loggers_config.items():
+    for logger_name in critical_loggers:
         logger = logging.getLogger(logger_name)
-        logger.setLevel(logger_level)
-        # 确保使用相同的 handler
-        logger.handlers.clear()
+        logger.handlers.clear()  # 强制清除所有现有处理器
         logger.addHandler(handler)
+        # SQLAlchemy 根据配置文件设置不同级别，覆盖默认值
+        if logger_name.startswith("sqlalchemy"):
+            logger.setLevel(getattr(logging, log_level, logging.INFO))
         logger.propagate = False  # 防止重复输出
 
 
 def get_logger(name: str) -> logging.Logger:
     """获取指定名称的日志器"""
     return logging.getLogger(name)
-
-
-def get_uvicorn_log_config() -> dict[str, Any]:
-    """获取 uvicorn 兼容的日志配置"""
-    settings = get_settings()
-    log_level = settings.log_level.upper()
-
-    print(log_level) # WARNING
-    
-    return {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                "use_colors": False,  # uvicorn 会处理颜色
-            },
-            "colored": {
-                "()": "app.core.logging.ColoredFormatter",
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            },
-        },
-        "handlers": {
-            "default": {
-                "formatter": "colored",
-                "class": "logging.StreamHandler",
-                "stream": "ext://sys.stdout",
-            },
-        },
-        "loggers": {
-            "": {  # root logger
-                "level": log_level,
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "uvicorn": {
-                "level": "INFO",
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "uvicorn.access": {
-                "level": "WARNING",
-                "handlers": ["default"], 
-                "propagate": False,
-            },
-            "uvicorn.error": {
-                "level": "INFO",
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "sqlalchemy.engine": {
-                "level": "INFO" if settings.debug else "WARNING",
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "sqlalchemy.pool": {
-                "level": "WARNING",
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "httpx": {
-                "level": "WARNING",
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "apscheduler": {
-                "level": "INFO",
-                "handlers": ["default"],
-                "propagate": False,
-            },
-            "app": {
-                "level": log_level,
-                "handlers": ["default"],
-                "propagate": False,
-            },
-        },
-    }

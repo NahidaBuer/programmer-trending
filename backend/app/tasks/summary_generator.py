@@ -4,7 +4,6 @@
 使用队列和并发控制机制生成文章摘要
 """
 import asyncio
-import logging
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
@@ -13,11 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import get_settings
 from ..core.database import AsyncSessionLocal
+from ..core.logging import get_logger
 from ..models.item import Item
 from ..models.summary import Summary, SummaryStatus
 from ..services.summary_service import summary_service
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SummaryGenerator:

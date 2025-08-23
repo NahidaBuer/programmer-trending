@@ -6,11 +6,11 @@
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import StreamingResponse
 import json
-import logging
 from app.services.chat_service import chat_service, ChatMessage
+from app.core.logging import get_logger
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.post("/stream")
 async def chat_stream_anonymous(

@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
-import logging
 
 from .base import BaseCrawler, CrawledItem
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class HackerNewsCrawler(BaseCrawler):

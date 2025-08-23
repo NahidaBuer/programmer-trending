@@ -1,4 +1,3 @@
-import logging
 import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Callable, Any, Dict
@@ -9,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
-from app.core.logging import setup_logging, get_uvicorn_log_config
+from app.core.logging import setup_logging
 from app.schemas.common import APIResponse
 from app.tasks.scheduler import task_scheduler
 
@@ -17,6 +16,9 @@ from app.tasks.scheduler import task_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """应用生命周期管理"""
+    # 强制重新配置所有日志器（解决 uvicorn CLI 启动的格式问题）
+    setup_logging()
+    
     # 启动时初始化数据库
     await init_db()
     
@@ -98,20 +100,9 @@ if __name__ == "__main__":
     import uvicorn
     settings = get_settings()
     
-    # 获取 uvicorn 兼容的日志配置
-    log_config = get_uvicorn_log_config()
-
-    logger = logging.getLogger(__name__)
-    logger.info("Starting server...")
-    logger.debug("Starting server...")
-    logger.warning("Starting server...")
-    logger.error("Starting server...")
-    logger.critical("Starting server...")
-    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
         reload=settings.debug,
-        log_config=log_config,
     )

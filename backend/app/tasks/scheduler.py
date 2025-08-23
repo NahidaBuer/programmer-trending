@@ -12,7 +12,6 @@ from .summary_generator import summary_generator
 
 logger = get_logger(__name__)
 
-
 class TaskScheduler:
     """任务调度器，管理定时爬取任务"""
     

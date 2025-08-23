@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 
 from .config import get_settings
@@ -16,14 +16,14 @@ settings = get_settings()
 if settings.database_url.startswith("sqlite"):
     engine = create_async_engine(
         settings.database_url,
-        echo=settings.debug,
+        echo=False,  # 禁用 SQLAlchemy 内置 echo，通过日志系统控制
         future=True,
         poolclass=NullPool,
     )
 elif settings.database_url.startswith("postgresql"):
     engine = create_async_engine(
         settings.database_url,
-        echo=settings.debug,
+        echo=False,  # 禁用 SQLAlchemy 内置 echo，通过日志系统控制
         future=True,
         pool_size=20,
         max_overflow=30,
@@ -39,8 +39,9 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
-# 创建基础模型类
-Base = declarative_base()
+# 创建基础模型类（使用现代 SQLAlchemy 2.0 风格）
+class Base(DeclarativeBase):
+    pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -61,8 +62,8 @@ async def init_db():
         await conn.execute(text("SELECT 1"))
         
     # 提示用户如果遇到表不存在的错误，需要运行 Alembic 迁移
-    import logging
-    logger = logging.getLogger(__name__)
+    from .logging import get_logger
+    logger = get_logger(__name__)
     logger.warning("Database initialization completed. Use 'alembic upgrade head' to create/update tables.")
 
 

@@ -3,7 +3,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import outerjoin
 
 from app.core.database import get_db
 from app.schemas.common import APIResponse, PaginationMeta

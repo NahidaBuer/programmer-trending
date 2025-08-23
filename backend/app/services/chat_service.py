@@ -4,7 +4,6 @@ Google Gemini 流式聊天服务
 使用官方 google-genai SDK 的流式 API 处理实时聊天对话
 """
 import json
-import logging
 import time
 from typing import AsyncGenerator, Optional, Dict, Any
 
@@ -13,8 +12,9 @@ from google.genai import types
 from pydantic import BaseModel
 
 from ..core.config import get_settings
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ChatMessage(BaseModel):

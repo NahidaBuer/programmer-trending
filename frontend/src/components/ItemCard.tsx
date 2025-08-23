@@ -76,7 +76,6 @@ export default function ItemCard({ item }: ItemCardProps) {
             </p>
           )}
       </div>
-
       {/* AI 摘要 */}
       {(item.summary_content && (
         <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
@@ -87,14 +86,15 @@ export default function ItemCard({ item }: ItemCardProps) {
             {item.summary_content}
           </p>
         </div>
-      )) || (
-        <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-100">
-          <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
-            AI 摘要暂不可用，可能受到源站严格反爬限制
-          </p>
-        </div>
-      )}
-
+      )) ||
+        (!summaryStatus && (
+          <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-100">
+            <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
+              AI 摘要暂不可用，可能受到源站严格反爬限制
+            </p>
+          </div>
+        ))}{" "}
+      {/* 如果摘要状态完成且为空，解释一下（ */}
       {/* 摘要状态（如果不是完成状态） */}
       {summaryStatus && (
         <div className="mb-4">
@@ -105,7 +105,6 @@ export default function ItemCard({ item }: ItemCardProps) {
           </span>
         </div>
       )}
-
       {/* 元信息 */}
       <div className="flex items-center justify-between text-sm text-gray-500">
         <div className="flex items-center space-x-4">
