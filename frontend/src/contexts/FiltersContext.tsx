@@ -3,7 +3,7 @@ import React, {
   useContext,
   useState,
   useCallback,
-  ReactNode,
+  type ReactNode,
 } from "react";
 
 // 筛选器类型定义

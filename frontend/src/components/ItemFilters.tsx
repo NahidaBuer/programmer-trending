@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { useFilters, type SummaryFilterType, type SortFilterType } from "../contexts/FiltersContext";
+import { useFilters, type SummaryFilterType } from "../contexts/FiltersContext";
 
 // 时间筛选选项
 const TIME_FILTER_OPTIONS = [

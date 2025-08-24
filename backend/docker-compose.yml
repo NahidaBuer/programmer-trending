@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    image: programmer_trending_backend
+    ports:
+      - "8000:8000"
+    environment:
+      # 数据库配置 - 映射到挂载的路径
+      - DATABASE_URL=sqlite+aiosqlite:///app/programmer_trending.db
+      # - DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/programmer_trending
+      # Google Gemini API 密钥
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # 爬虫配置
+      # - CRAWL_INTERVAL_MINUTES=120
+      # - SUMMARY_CONCURRENCY=1
+      # 日志级别
+      # - LOG_LEVEL=INFO
+    volumes:
+      # 挂载数据库目录到外部，避免数据丢失
+      - ./programmer_trending.db:/app/programmer_trending.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 可选：如果使用 PostgreSQL
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     - POSTGRES_DB=programmer_trending
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+# volumes:
+#   postgres_data:
