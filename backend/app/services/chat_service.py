@@ -5,7 +5,7 @@ Google Gemini 流式聊天服务
 """
 import json
 import time
-from typing import AsyncGenerator, Dict, Any
+from typing import AsyncGenerator, Dict, Any, List, Optional, Literal
 
 from google import genai
 from google.genai import types
@@ -18,8 +18,16 @@ logger = get_logger(__name__)
 
 
 class ChatMessage(BaseModel):
-    """聊天消息模型"""
+    """单条聊天消息"""
+    role: Literal["user", "model"]
     content: str
+
+
+class ChatRequest(BaseModel):
+    """聊天请求（包含完整上下文）"""
+    messages: List[ChatMessage]
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
 
 
 class RateLimiter:
@@ -77,7 +85,7 @@ class ChatService:
     
     async def stream_chat_anonymous(
         self, 
-        message: ChatMessage, 
+        request: ChatRequest, 
     ) -> AsyncGenerator[str, None]:
         """匿名用户流式聊天（使用服务器API key + 限流）"""
         
@@ -93,21 +101,21 @@ class ChatService:
             yield f'data: {json.dumps({"error": "服务器配置错误"})}\n\n'
             return
         
-        async for chunk in self._stream_gemini_response_sdk(message, api_key):
+        async for chunk in self._stream_gemini_response_sdk(request, api_key):
             yield chunk
     
     async def stream_chat_with_user_key(
         self, 
-        message: ChatMessage, 
+        request: ChatRequest, 
         user_api_key: str
     ) -> AsyncGenerator[str, None]:
         """用户自己API key的流式聊天（无限流）"""
-        async for chunk in self._stream_gemini_response_sdk(message, user_api_key):
+        async for chunk in self._stream_gemini_response_sdk(request, user_api_key):
             yield chunk
     
     async def _stream_gemini_response_sdk(
         self, 
-        message: ChatMessage, 
+        request: ChatRequest, 
         api_key: str
     ) -> AsyncGenerator[str, None]:
         """使用 Google Gen AI SDK 的核心流式响应处理"""
@@ -116,13 +124,26 @@ class ChatService:
             # 创建客户端
             client = genai.Client(api_key=api_key)
             
-            # 构建请求参数
-            contents = message.content
+            # 构建消息历史（Gemini 格式）
+            contents: list[types.ContentDict] = []
+            for msg in request.messages:
+                contents.append({
+                    "role": msg.role,
+                    "parts": [{"text": msg.content}]
+                })
+            
+            # 构建配置（支持用户自定义参数）
             config = self._build_chat_config()
+            if request.temperature is not None:
+                config.temperature = request.temperature
+            if request.max_tokens is not None:
+                config.max_output_tokens = request.max_tokens
+            
             model = self.settings.gemini_model or "gemini-2.5-flash"
             
             logger.info(f"Starting streaming chat with model: {model}")
-            logger.info(f"Message content: {message.content[:100]}...")
+            logger.info(f"Messages count: {len(request.messages)}")
+            logger.info(f"Last message: {request.messages[-1].content[:100]}...")
             
             # 使用 SDK 的异步流式方法
             async for chunk in await client.aio.models.generate_content_stream(

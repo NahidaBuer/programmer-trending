@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { API_SERVER_URL } from "../api/client";
 import type { Message } from "../components/MessageBubble";
+import type { ChatRequest, ChatMessage, ChatStreamChunk } from "../types/api";
 
 interface ChatOptions {
   apiKey?: string | null;
@@ -70,8 +71,25 @@ export function useChat(options: ChatOptions = {}): ChatHookReturn {
           headers["X-API-Key"] = options.apiKey;
         }
 
-        const requestBody = {
+        // 构建消息历史
+        const chatMessages: ChatMessage[] = [];
+
+        // 添加历史消息
+        for (const msg of messages) {
+          chatMessages.push({
+            role: msg.isUser ? "user" : "model",
+            content: msg.content,
+          });
+        }
+
+        // 添加当前用户消息
+        chatMessages.push({
+          role: "user",
           content,
+        });
+
+        const requestBody: ChatRequest = {
+          messages: chatMessages,
         };
 
         // 发起 SSE 请求
@@ -113,7 +131,7 @@ export function useChat(options: ChatOptions = {}): ChatHookReturn {
                 const data = line.slice(6); // 去掉 'data: '
 
                 try {
-                  const parsed = JSON.parse(data);
+                  const parsed: ChatStreamChunk = JSON.parse(data);
 
                   if (parsed.error) {
                     // 处理错误

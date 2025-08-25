@@ -6,7 +6,7 @@
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import StreamingResponse
 import json
-from app.services.chat_service import chat_service, ChatMessage
+from app.services.chat_service import chat_service, ChatRequest
 from app.core.logging import get_logger
 
 router = APIRouter()
@@ -15,13 +15,13 @@ logger = get_logger(__name__)
 @router.post("/stream")
 async def chat_stream_anonymous(
     request: Request,
-    message: ChatMessage
+    chat_request: ChatRequest
 ) -> StreamingResponse:
     """匿名用户流式聊天接口（使用服务器API key + 全站限流）"""
     
     async def generate():
         try:
-            async for chunk in chat_service.stream_chat_anonymous(message):
+            async for chunk in chat_service.stream_chat_anonymous(chat_request):
                 logger.info(f"chunk: {chunk}")
                 yield chunk
         except Exception as e:
@@ -43,7 +43,7 @@ async def chat_stream_anonymous(
 @router.post("/stream/user-key")
 async def chat_stream_with_user_key(
     request: Request,
-    message: ChatMessage,
+    chat_request: ChatRequest,
     x_api_key: str = Header(alias="X-API-Key")
 ) -> StreamingResponse:
     """用户自己API key的流式聊天接口（无限流）"""
@@ -56,7 +56,7 @@ async def chat_stream_with_user_key(
     
     async def generate():
         try:
-            async for chunk in chat_service.stream_chat_with_user_key(message, x_api_key):
+            async for chunk in chat_service.stream_chat_with_user_key(chat_request, x_api_key):
                 yield chunk
         except Exception as e:
             # 错误处理

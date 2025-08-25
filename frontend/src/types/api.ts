@@ -60,10 +60,20 @@ export interface Source {
 
 // 聊天相关
 export interface ChatMessage {
+  role: "user" | "model";
   content: string;
 }
 
-export interface ChatResponse {
-  reply: string;
-  response_json?: any;
+export interface ChatRequest {
+  messages: ChatMessage[];
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface ChatStreamChunk {
+  text?: string;
+  done?: boolean;
+  error?: string;
+  code?: string;
+  retry_after?: number;
 }

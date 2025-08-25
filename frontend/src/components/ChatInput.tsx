@@ -12,6 +12,7 @@ export default function ChatInput({
   placeholder = "输入你的问题...",
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [isComposing, setIsComposing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 自动调整文本框高度
@@ -36,10 +37,18 @@ export default function ChatInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSubmit(e);
     }
+  };
+
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = () => {
+    setIsComposing(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -55,6 +64,8 @@ export default function ChatInput({
             value={message}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
             placeholder={disabled ? "AI 正在回复中..." : placeholder}
             disabled={disabled}
             className={`
