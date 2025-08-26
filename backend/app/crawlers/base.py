@@ -89,7 +89,7 @@ class BaseCrawler(ABC):
         if not self.session:
             raise RuntimeError("Crawler not initialized. Use 'async with' context manager.")
             
-        max_retries = 3
+        max_retries = 5
         for attempt in range(max_retries):
             try:
                 response = await self.session.get(url, **kwargs)

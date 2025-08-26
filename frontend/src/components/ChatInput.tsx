@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  onGetInsertHandler?: (handler: (content: string) => void) => void; // 获取插入处理器的回调
 }
 
 export default function ChatInput({
   onSendMessage,
   disabled = false,
   placeholder = "输入你的问题...",
+  onGetInsertHandler,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [isComposing, setIsComposing] = useState(false);
@@ -30,7 +32,7 @@ export default function ChatInput({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim() && !disabled) {
+    if (message?.trim() && !disabled) {
       onSendMessage(message.trim());
       setMessage("");
     }
@@ -55,6 +57,30 @@ export default function ChatInput({
     setMessage(e.target.value);
   };
 
+  // 插入内容的方法
+  const insertContent = useCallback((content: string) => {
+    setMessage(currentMessage => {
+      const newMessage = currentMessage ? `${currentMessage}\n\n${content}` : content;
+      
+      // 设置焦点到文本框并移动光标到末尾
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newMessage.length, newMessage.length);
+        }
+      }, 0);
+      
+      return newMessage;
+    });
+  }, []);
+
+  // 暴露插入方法给父组件
+  useEffect(() => {
+    if (onGetInsertHandler) {
+      onGetInsertHandler(insertContent);
+    }
+  }, [onGetInsertHandler, insertContent]);
+
   return (
     <div className="border-t border-gray-200 bg-white p-4">
       <form onSubmit={handleSubmit} className="flex items-end space-x-3">
@@ -66,7 +92,7 @@ export default function ChatInput({
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
-            placeholder={disabled ? "AI 正在回复中..." : placeholder}
+            placeholder={disabled ? "AI 正在回复中..." : (placeholder || "输入你的问题...")}
             disabled={disabled}
             className={`
               w-full resize-none rounded-lg border border-gray-300 px-4 py-3 pr-12
@@ -81,11 +107,11 @@ export default function ChatInput({
           {/* 发送按钮 */}
           <button
             type="submit"
-            disabled={disabled || !message.trim()}
+            disabled={disabled || !message?.trim()}
             className={`
               absolute right-2 bottom-2 p-2 rounded-lg transition-all duration-200
               ${
-                disabled || !message.trim()
+                disabled || !message?.trim()
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
               }

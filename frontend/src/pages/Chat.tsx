@@ -3,11 +3,17 @@ import { useChat } from "../hooks/useChat";
 import MessageBubble from "../components/MessageBubble";
 import ChatInput from "../components/ChatInput";
 import ApiKeySettings from "../components/ApiKeySettings";
+import { useDiscussionStorage } from "../hooks/useDiscussionStorage";
 
 export default function Chat() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState<string>("");
+  const [insertHandler, setInsertHandler] = useState<
+    ((content: string) => void) | null
+  >(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { count, generateMarkdown } = useDiscussionStorage();
 
   const { messages, isLoading, error, sendMessage, clearMessages } = useChat({
     apiKey,
@@ -35,6 +41,13 @@ export default function Chat() {
   const handleClearChat = () => {
     if (window.confirm("确定要清空所有对话吗？")) {
       clearMessages();
+    }
+  };
+
+  const handleInsertDiscussion = () => {
+    if (insertHandler) {
+      const markdown = generateMarkdown();
+      insertHandler(markdown);
     }
   };
 
@@ -83,6 +96,30 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* 插入讨论清单按钮 */}
+            {count > 0 && (
+              <button
+                onClick={handleInsertDiscussion}
+                className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                title="插入讨论清单"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span>插入讨论清单 ({count})</span>
+              </button>
+            )}
+
             {/* 清空对话按钮 */}
             {messages.length > 0 && (
               <button
@@ -206,6 +243,7 @@ export default function Chat() {
               ? `输入你的问题... (${rateLimitInfo})`
               : "输入你的问题..."
           }
+          onGetInsertHandler={setInsertHandler}
         />
       </div>
     </div>

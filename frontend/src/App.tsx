@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
+import DiscussionCartButton from "./components/DiscussionCartButton";
 
 function App() {
   const [activeSourceId, setActiveSourceId] = useState<string>();
@@ -23,6 +24,9 @@ function App() {
           <Route path="chat" element={<Chat />} />
         </Route>
       </Routes>
+      
+      {/* 全局悬浮按钮 */}
+      <DiscussionCartButton />
     </Router>
   );
 }

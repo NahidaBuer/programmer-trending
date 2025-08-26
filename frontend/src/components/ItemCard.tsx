@@ -1,7 +1,27 @@
+import { useState } from "react";
 import type { ItemWithSummary } from "../types/api";
+import { useDiscussionStorage } from "../hooks/useDiscussionStorage";
 
 interface ItemCardProps {
   item: ItemWithSummary;
+}
+
+// 数据源名称映射
+function getSourceDisplayName(sourceId: string): string {
+  const sourceNames: Record<string, string> = {
+    hackernews: "Hacker News",
+    // 'github': 'GitHub',
+  };
+  return sourceNames[sourceId] || sourceId;
+}
+
+// 生成讨论链接
+function getDiscussionUrl(item: ItemWithSummary): string | null {
+  if (item.source_id === "hackernews") {
+    return `https://news.ycombinator.com/item?id=${item.id}`;
+  }
+  // 其他数据源暂时返回原始链接
+  return item.url;
 }
 
 // 格式化时间显示
@@ -43,38 +63,107 @@ function getSummaryStatusDisplay(
 }
 
 export default function ItemCard({ item }: ItemCardProps) {
+  const [showToast, setShowToast] = useState(false);
+  const [isToastFading, setIsToastFading] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const { add, remove, contains } = useDiscussionStorage();
+
   // 智能标题显示：优先显示翻译标题，无则回落到原始标题
   const displayTitle = item.translated_title?.trim() || item.title;
 
   // 摘要状态显示
   const summaryStatus = getSummaryStatusDisplay(item.summary_status);
 
+  // 检查是否已在讨论清单中
+  const isInDiscussion = contains(item.id);
+
+  // 处理添加到讨论清单
+  const handleAddToDiscussion = () => {
+    const success = add(item);
+    if (success) {
+      showToastMessage("已添加到讨论清单");
+    } else {
+      showToastMessage("添加失败或已存在");
+    }
+  };
+
+  // 处理从讨论清单移除
+  const handleRemoveFromDiscussion = () => {
+    const success = remove(item.id);
+    if (success) {
+      showToastMessage("已从讨论清单移除");
+    }
+  };
+
+  // 显示 Toast 提示
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setIsToastFading(false);
+    
+    // 开始淡出
+    setTimeout(() => {
+      setIsToastFading(true);
+    }, 1500);
+    
+    // 完全隐藏
+    setTimeout(() => {
+      setShowToast(false);
+      setIsToastFading(false);
+    }, 2000);
+  };
+
   return (
-    <article className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
-      {/* 标题和链接 */}
-      <div className="mb-3">
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2"
+    <article className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow relative">
+      {/* Toast 提示 */}
+      {showToast && (
+        <div className={`absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 ${
+          isToastFading ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0 animate-fade-in'
+        }`}>
+          {toastMessage}
+        </div>
+      )}
+      {/* 标题和操作按钮区域 */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2"
+          >
+            {displayTitle}
+          </a>
+          {/* 如果显示的是翻译标题，小字显示原标题 */}
+          {item.translated_title?.trim() &&
+            item.translated_title !== item.title && (
+              <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600"
+                >
+                  {item.title}
+                </a>
+              </p>
+            )}
+        </div>
+
+        {/* 讨论按钮 */}
+        <button
+          onClick={
+            isInDiscussion ? handleRemoveFromDiscussion : handleAddToDiscussion
+          }
+          className={`ml-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+            isInDiscussion
+              ? "bg-red-100 text-red-700 hover:bg-red-200"
+              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+          }`}
+          title={isInDiscussion ? "从讨论清单移除" : "加入讨论清单"}
         >
-          {displayTitle}
-        </a>
-        {/* 如果显示的是翻译标题，小字显示原标题 */}
-        {item.translated_title?.trim() &&
-          item.translated_title !== item.title && (
-            <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-blue-600"
-              >
-                {item.title}
-              </a>
-            </p>
-          )}
+          {isInDiscussion ? "移除" : "讨论"}
+        </button>
       </div>
       {/* AI 摘要 */}
       {(item.summary_content && (
@@ -125,20 +214,18 @@ export default function ItemCard({ item }: ItemCardProps) {
           {/* 作者 */}
           {item.author && <span>by {item.author}</span>}
 
-          {/* 数据源 */}
-          <a href={item.url} target="_blank" rel="noopener noreferrer">
-            <span className="capitalize hover:text-blue-600">
-              {item.source_id}
-            </span>
+          {/* 数据源和讨论链接 */}
+          <a
+            href={getDiscussionUrl(item)!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-blue-600"
+          >
+            <span>{getSourceDisplayName(item.source_id)}</span>
           </a>
+          {/* 时间 */}
         </div>
-
-        {/* 时间 */}
-        <a href={item.url} target="_blank" rel="noopener noreferrer">
-          <span className="hover:text-blue-600">
-            {formatTimeAgo(item.created_at)}
-          </span>
-        </a>
+        <span className="ml-2">{formatTimeAgo(item.created_at)}</span>
       </div>
     </article>
   );
