@@ -2,13 +2,14 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Callable, Any, Dict
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
 from app.core.logging import setup_logging
+from app.core.security import get_current_admin
 from app.schemas.common import APIResponse
 from app.tasks.scheduler import task_scheduler
 
@@ -44,6 +45,9 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         debug=settings.debug,
         lifespan=lifespan,
+        docs_url=None,  # 禁用默认的 /docs
+        redoc_url=None,  # 禁用默认的 /redoc
+        openapi_url=None,  # 禁用默认的 /openapi.json
     )
 
     # 添加 CORS 中间件
@@ -92,6 +96,27 @@ def create_app() -> FastAPI:
             data={"status": "healthy", "service": settings.app_name},
             error=None,
             meta={"requestId": request_id},
+        )
+
+    # 受保护的文档接口
+    @app.get("/openapi.json", include_in_schema=False)
+    async def get_openapi_schema(_: str = Depends(get_current_admin)):
+        return app.openapi()
+
+    @app.get("/docs", include_in_schema=False)
+    async def get_docs(_: str = Depends(get_current_admin)):
+        from fastapi.openapi.docs import get_swagger_ui_html
+        return get_swagger_ui_html(
+            openapi_url="/openapi.json",
+            title=f"{settings.app_name} - Swagger UI"
+        )
+
+    @app.get("/redoc", include_in_schema=False)
+    async def get_redoc(_: str = Depends(get_current_admin)):
+        from fastapi.openapi.docs import get_redoc_html
+        return get_redoc_html(
+            openapi_url="/openapi.json",
+            title=f"{settings.app_name} - ReDoc"
         )
 
     # 注册 API 路由

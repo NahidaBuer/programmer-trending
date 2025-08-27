@@ -56,6 +56,10 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = Field(default="DEBUG")
+    
+    # Security - HTTP Basic Auth
+    admin_username: str = Field(default="admin")
+    admin_password: str = Field(default="changeme")
 
 
 @lru_cache()

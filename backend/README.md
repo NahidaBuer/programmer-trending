@@ -91,8 +91,10 @@ volumes:
 可选配置：
 
 - `CRAWL_INTERVAL_MINUTES`: 抓取间隔（默认 120 分钟）
-- `SUMMARY_CONCURRENCY`: 摘要生成并发数（默认 3）
+- `SUMMARY_CONCURRENCY`: 摘要生成并发数（默认 1）
 - `LOG_LEVEL`: 日志级别（默认 INFO）
+- `ADMIN_USERNAME`: 管理员用户名（默认 admin）
+- `ADMIN_PASSWORD`: 管理员密码（默认 changeme，生产环境务必修改）
 
 ## 数据库管理
 
@@ -125,13 +127,31 @@ Docker 镜像启动时会自动运行数据库迁移，无需手动操作。
 
 ## API 端点
 
+### 公开接口
 - `GET /health` - 健康检查
 - `GET /api/v1/sources` - 获取数据源列表
 - `GET /api/v1/items` - 获取文章列表（支持筛选、分页、排序）
 - `GET /api/v1/summaries` - 获取摘要列表
 - `POST /api/v1/chat` - AI 聊天对话
 
-详细的 API 文档在应用启动后访问 http://localhost:8000/docs
+### 管理接口（需要认证）
+- `GET /docs` - Swagger UI 文档（HTTP Basic Auth）
+- `GET /redoc` - ReDoc 文档（HTTP Basic Auth）
+- `GET /openapi.json` - OpenAPI JSON Schema（HTTP Basic Auth）
+- `POST /api/v1/crawl/trigger` - 手动触发爬取（HTTP Basic Auth）
+- `POST /api/v1/summaries/generate` - 手动触发摘要生成（HTTP Basic Auth）
+- `POST /api/v1/summaries/batch-create` - 批量创建摘要任务（HTTP Basic Auth）
+- `POST /api/v1/summaries/batch-create-and-generate` - 批量创建并生成摘要（HTTP Basic Auth）
+
+### 安全配置
+
+生产环境部署时，所有文档接口和管理操作接口都已配置 HTTP Basic Auth 保护：
+
+- **用户名和密码**：通过环境变量 `ADMIN_USERNAME` 和 `ADMIN_PASSWORD` 配置
+- **默认凭据**：用户名 `admin`，密码 `changeme`（⚠️ **生产环境务必修改**）
+- **受保护的接口**：文档页面（/docs, /redoc）和所有管理操作接口
+
+详细的 API 文档在应用启动后访问 http://localhost:8000/docs （需要认证）
 
 ## 注意事项
 
@@ -139,3 +159,4 @@ Docker 镜像启动时会自动运行数据库迁移，无需手动操作。
 2. **数据备份**：定期备份数据库（SQLite 或 PostgreSQL）
 3. **资源监控**：监控 API 调用频率，避免超出限额
 4. **网络连接**：确保服务器能访问外部 API（Google Gemini）
+5. **安全认证**：生产环境务必修改默认的管理员用户名和密码

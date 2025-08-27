@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import get_current_admin
 from app.schemas.common import APIResponse
 from app.schemas.summary import SummaryResponse, SummaryCreate
 from app.models.summary import Summary, SummaryStatus
@@ -152,7 +153,9 @@ async def list_summaries(
 
 
 @router.post("/generate", response_model=APIResponse[Dict[str, Any]])
-async def trigger_summary_generation(request: Request) -> APIResponse[Dict[str, Any]]:
+async def trigger_summary_generation(
+    request: Request, _: str = Depends(get_current_admin)
+) -> APIResponse[Dict[str, Any]]:
     """手动触发摘要生成任务"""
     request_id = getattr(request.state, "request_id", "unknown")
 
@@ -169,6 +172,7 @@ async def batch_create_summary_tasks(
     ),
     model: str = Query("gemini-2.5-flash", description="使用的AI模型"),
     lang: str = Query("zh-CN", description="摘要语言"),
+    _: str = Depends(get_current_admin),
 ) -> APIResponse[Dict[str, Any]]:
     """为所有没有摘要的文章批量创建摘要任务"""
     request_id = getattr(request.state, "request_id", "unknown")
@@ -188,6 +192,7 @@ async def batch_create_and_generate_summaries(
     ),
     model: str = Query("gemini-2.5-flash", description="使用的AI模型"),
     lang: str = Query("zh-CN", description="摘要语言"),
+    _: str = Depends(get_current_admin),
 ) -> APIResponse[Dict[str, Any]]:
     """批量创建摘要任务并立即开始生成"""
     request_id = getattr(request.state, "request_id", "unknown")

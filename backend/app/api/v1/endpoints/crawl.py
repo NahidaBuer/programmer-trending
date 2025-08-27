@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import get_current_admin
 from app.schemas.common import APIResponse
 from app.tasks.scheduler import task_scheduler
 
@@ -16,7 +17,8 @@ async def trigger_crawl(
         None, description="指定数据源ID，为空则爬取所有源"
     ),
     limit: int = Query(30, description="爬取条目数量限制"),
-    _: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
+    _: str = Depends(get_current_admin),
 ) -> APIResponse[Dict[str, Any]]:
     """手动触发爬取任务"""
     request_id = getattr(request.state, "request_id", "unknown")
