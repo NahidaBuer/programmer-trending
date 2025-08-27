@@ -34,6 +34,7 @@ export interface ItemWithSummary {
   url: string;
   score?: number;
   author?: string;
+  source_internal_id?: string;
   created_at: string;
   fetched_at: string;
   // 摘要相关字段

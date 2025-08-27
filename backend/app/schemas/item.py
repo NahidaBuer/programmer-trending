@@ -12,6 +12,7 @@ class ItemBase(BaseModel):
     url: str = Field(..., description="文章链接")
     score: Optional[int] = Field(None, description="分数")
     author: Optional[str] = Field(None, description="作者")
+    source_internal_id: Optional[str] = Field(None, description="数据源内部ID")
 
 
 class ItemCreate(ItemBase):

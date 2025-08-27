@@ -19,9 +19,9 @@ export interface FilterParams {
 
 // 默认筛选器状态
 const DEFAULT_FILTERS: FilterParams = {
-  timeFilter: undefined,
-  summaryFilter: "all",
-  sortFilter: "score",
+  timeFilter: 7,
+  summaryFilter: "with_summary",
+  sortFilter: "time",
   customDays: "",
 };
 

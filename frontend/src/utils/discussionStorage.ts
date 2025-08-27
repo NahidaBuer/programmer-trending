@@ -152,7 +152,7 @@ export class DiscussionStorage {
 
       // 添加讨论链接（如果是 Hacker News）
       if (item.source_id === "hackernews") {
-        markdown += `\n  - 讨论：https://news.ycombinator.com/item?id=${item.id}`;
+        markdown += `\n  - 讨论：https://news.ycombinator.com/item?id=${item.source_internal_id}`;
       }
 
       markdown += "\n\n";

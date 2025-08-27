@@ -189,8 +189,9 @@ class GeminiSummaryService:
                     or "quota" in error_str.lower()
                 ):
                     logger.warning(
-                        f"遇到速率限制错误 (重试 {retry_count + 1}/{max_retries + 1}): {error_str}"
+                        f"遇到速率限制错误 (重试 {retry_count + 1}/{max_retries + 1}): "
                     )
+                    logger.exception(e)
                     retry_count += 1
 
                     if retry_count <= max_retries:
@@ -205,8 +206,9 @@ class GeminiSummaryService:
                 else:
                     # 其他错误不重试
                     logger.error(
-                        f"Error generating summary for item {item.id}: {error_str}"
+                        f"Error generating summary for item {item.id}:"
                     )
+                    logger.exception(e)
                     return False, {"error": error_str}
 
         # 不应该到达这里

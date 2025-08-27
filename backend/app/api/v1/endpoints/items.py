@@ -111,6 +111,7 @@ async def get_items(
                 url=item.url,
                 score=item.score,
                 author=item.author,
+                source_internal_id=item.external_id,
                 created_at=item.created_at,
                 fetched_at=item.fetched_at,
                 # 摘要信息（可能为None）
@@ -182,6 +183,7 @@ async def get_item(
             url=item.url,
             score=item.score,
             author=item.author,
+            source_internal_id=item.external_id,
             created_at=item.created_at,
             fetched_at=item.fetched_at,
         )

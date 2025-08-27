@@ -3,24 +3,24 @@ import { useFilters, type SummaryFilterType } from "../contexts/FiltersContext";
 
 // 时间筛选选项
 const TIME_FILTER_OPTIONS = [
-  { label: "全部", value: undefined },
   { label: "1天", value: 1 },
   { label: "7天", value: 7 },
   { label: "30天", value: 30 },
+  { label: "全部", value: undefined },
   { label: "自定义", value: "custom" as const },
 ];
 
 // 摘要状态筛选选项
 const SUMMARY_FILTER_OPTIONS = {
-  all: { label: "显示全部", has_summary: undefined },
   with_summary: { label: "仅显示有摘要", has_summary: true },
+  all: { label: "显示全部", has_summary: undefined },
   without_summary: { label: "仅显示无摘要", has_summary: false },
 };
 
 // 排序选项
 const SORT_FILTER_OPTIONS = {
-  score: { label: "按点赞数", value: "score" },
   time: { label: "按时间", value: "time" },
+  score: { label: "按点赞数", value: "score" },
 };
 
 // 使用 memo 防止不必要的重渲染，现在只有Context中的filters变化才会重渲染
@@ -29,22 +29,26 @@ const ItemFilters: React.FC = memo(() => {
   const { timeFilter, summaryFilter, sortFilter, customDays } = filters;
 
   const handleTimeFilterChange = (value: number | "custom" | undefined) => {
-    updateFilter('timeFilter', value);
+    updateFilter("timeFilter", value);
     if (value !== "custom") {
-      updateFilter('customDays', "");
+      updateFilter("customDays", "");
     }
   };
 
   const handleSummaryFilterChange = () => {
-    const filterOrder: SummaryFilterType[] = ["all", "with_summary", "without_summary"];
+    const filterOrder: SummaryFilterType[] = [
+      "all",
+      "with_summary",
+      "without_summary",
+    ];
     const currentIndex = filterOrder.indexOf(summaryFilter);
     const nextIndex = (currentIndex + 1) % filterOrder.length;
-    updateFilter('summaryFilter', filterOrder[nextIndex]);
+    updateFilter("summaryFilter", filterOrder[nextIndex]);
   };
 
   const handleSortFilterChange = () => {
     const newSort = sortFilter === "score" ? "time" : "score";
-    updateFilter('sortFilter', newSort);
+    updateFilter("sortFilter", newSort);
   };
 
   return (
@@ -59,7 +63,9 @@ const ItemFilters: React.FC = memo(() => {
                 <input
                   type="radio"
                   name="timeFilter"
-                  value={option.value === "custom" ? "custom" : (option.value || "")}
+                  value={
+                    option.value === "custom" ? "custom" : option.value || ""
+                  }
                   checked={timeFilter === option.value}
                   onChange={() => handleTimeFilterChange(option.value)}
                   className="mr-1 text-blue-600 focus:ring-blue-500"
@@ -72,7 +78,7 @@ const ItemFilters: React.FC = memo(() => {
                 type="number"
                 placeholder="天数"
                 value={customDays}
-                onChange={(e) => updateFilter('customDays', e.target.value)}
+                onChange={(e) => updateFilter("customDays", e.target.value)}
                 className="ml-1 px-2 py-1 border border-gray-300 rounded text-sm w-16 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 min="1"
                 max="365"
@@ -133,6 +139,6 @@ const ItemFilters: React.FC = memo(() => {
   );
 });
 
-ItemFilters.displayName = 'ItemFilters';
+ItemFilters.displayName = "ItemFilters";
 
 export default ItemFilters;
