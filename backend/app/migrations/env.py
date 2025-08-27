@@ -8,6 +8,7 @@ from alembic import context
 # 导入我们的模型和配置
 from app.core.database import Base
 from app.core.config import get_settings
+
 # 确保所有模型都被导入，这样 Alembic 才能发现它们
 from app.models import Source, Item, Summary  # noqa: F401
 
@@ -51,7 +52,7 @@ def run_migrations_offline() -> None:
         url = url.replace("sqlite+aiosqlite", "sqlite")
     elif url and url.startswith("postgresql+asyncpg"):
         url = url.replace("postgresql+asyncpg", "postgresql+psycopg2")
-    
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -73,15 +74,15 @@ def run_migrations_online() -> None:
     # 获取数据库配置并转换异步 URL 为同步
     configuration = config.get_section(config.config_ini_section, {})
     db_url = configuration.get("sqlalchemy.url", "")
-    
+
     # 将异步 URL 转换为同步 URL 用于迁移
     if db_url.startswith("sqlite+aiosqlite"):
         db_url = db_url.replace("sqlite+aiosqlite", "sqlite")
     elif db_url.startswith("postgresql+asyncpg"):
         db_url = db_url.replace("postgresql+asyncpg", "postgresql+psycopg2")
-    
+
     configuration["sqlalchemy.url"] = db_url
-    
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -89,9 +90,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

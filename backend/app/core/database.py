@@ -39,6 +39,7 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+
 # 创建基础模型类（使用现代 SQLAlchemy 2.0 风格）
 class Base(DeclarativeBase):
     pass
@@ -54,17 +55,21 @@ async def init_db():
     """初始化数据库连接 (表结构由 Alembic 管理)"""
     # 注意: 数据库表结构应该通过 Alembic 迁移来管理
     # 不再使用 Base.metadata.create_all() 避免与 Alembic 冲突
-    
+
     # 可以在这里添加数据库连接测试或其他初始化逻辑
     async with engine.begin() as conn:
         # 测试数据库连接
         from sqlalchemy import text
+
         await conn.execute(text("SELECT 1"))
-        
+
     # 提示用户如果遇到表不存在的错误，需要运行 Alembic 迁移
     from .logging import get_logger
+
     logger = get_logger(__name__)
-    logger.warning("Database initialization completed. Use 'alembic upgrade head' to create/update tables.")
+    logger.warning(
+        "Database initialization completed. Use 'alembic upgrade head' to create/update tables."
+    )
 
 
 async def close_db():

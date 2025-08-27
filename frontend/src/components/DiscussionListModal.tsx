@@ -1,39 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDiscussionStorage } from "../hooks/useDiscussionStorage";
 import { useNavigate } from "react-router-dom";
+import {
+  formatTimeAgo,
+  getSourceDisplayName,
+  getDisplayTitle,
+  hasTranslatedTitle,
+} from "../utils/itemHelpers";
 
 interface DiscussionListModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-// 格式化时间显示（复制自 ItemCard）
-function formatTimeAgo(dateString: string): string {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffInHours = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  );
-
-  if (diffInHours < 1) return "刚刚";
-  if (diffInHours < 24) return `${diffInHours}小时前`;
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 30) return `${diffInDays}天前`;
-
-  const diffInMonths = Math.floor(diffInDays / 30);
-  return `${diffInMonths}个月前`;
-}
-
-// 数据源名称映射（复制自 ItemCard）
-function getSourceDisplayName(sourceId: string): string {
-  const sourceNames: Record<string, string> = {
-    hackernews: "Hacker News",
-    github: "GitHub",
-    reddit: "Reddit",
-    producthunt: "Product Hunt",
-  };
-  return sourceNames[sourceId] || sourceId;
 }
 
 export default function DiscussionListModal({
@@ -42,6 +19,7 @@ export default function DiscussionListModal({
 }: DiscussionListModalProps) {
   const { items, remove, clear } = useDiscussionStorage();
   const navigate = useNavigate();
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // ESC 键关闭弹窗
   useEffect(() => {
@@ -84,11 +62,41 @@ export default function DiscussionListModal({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden">
         {/* 头部 */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-semibold text-gray-900">讨论清单</h2>
-            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
-              {items.length} 项
-            </span>
+          <div className="flex items-center space-x-3 cursor-pointer relative">
+            <div
+              className="flex items-center space-x-3"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <h2 className="text-xl font-semibold text-gray-900">讨论清单</h2>
+              <span className="inline-flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                {items.length} 项
+              </span>
+              <svg
+                className="w-4 h-4 text-gray-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+
+            {/* Tooltip */}
+            {showTooltip && (
+              <div className="absolute left-0 top-full mt-2 bg-gray-900 text-white text-sm rounded-lg py-2 px-3 shadow-lg z-50 whitespace-nowrap">
+                <div className="space-y-1">
+                  <div>• 收集感兴趣的文章用于 AI 对话讨论</div>
+                  <div>• 最多保存 10 条，超出时自动删除最旧的</div>
+                  <div>• 可在聊天页面插入为对话背景</div>
+                </div>
+                {/* 箭头 */}
+                <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -155,8 +163,7 @@ export default function DiscussionListModal({
           ) : (
             <div className="p-6 space-y-4">
               {items.map((item) => {
-                const displayTitle =
-                  item.translated_title?.trim() || item.title;
+                const displayTitle = getDisplayTitle(item);
 
                 return (
                   <div
@@ -176,12 +183,11 @@ export default function DiscussionListModal({
                             {displayTitle}
                           </a>
                           {/* 如果显示的是翻译标题，小字显示原标题 */}
-                          {item.translated_title?.trim() &&
-                            item.translated_title !== item.title && (
-                              <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                                {item.title}
-                              </p>
-                            )}
+                          {hasTranslatedTitle(item) && (
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+                              {item.title}
+                            </p>
+                          )}
                         </div>
 
                         {/* 摘要 */}

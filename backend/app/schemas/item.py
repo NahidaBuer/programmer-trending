@@ -36,10 +36,11 @@ class ItemResponse(ItemBase):
 
 class ItemWithSummaryResponse(ItemBase):
     """带摘要信息的文章响应模型"""
+
     id: int = Field(..., description="条目ID")
     created_at: datetime = Field(..., description="创建时间")
     fetched_at: datetime = Field(..., description="抓取时间")
-    
+
     # 摘要信息（可能为空）
     summary_content: Optional[str] = Field(None, description="AI摘要内容")
     translated_title: Optional[str] = Field(None, description="翻译后的标题")
@@ -56,5 +57,6 @@ class ItemListResponse(BaseModel):
 
 class ItemWithSummaryListResponse(BaseModel):
     """带摘要信息的文章列表响应模型"""
+
     items: List[ItemWithSummaryResponse]
     pagination: PaginationMeta

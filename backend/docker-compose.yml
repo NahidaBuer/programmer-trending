@@ -6,12 +6,14 @@ services:
     image: programmer_trending_backend
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       # 数据库配置 - 映射到挂载的路径
       - DATABASE_URL=sqlite+aiosqlite:///app/programmer_trending.db
       # - DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/programmer_trending
-      # Google Gemini API 密钥
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # Google Gemini API 密钥: 建议在 .env 文件中配置, docker compose 会自动读取
+      # - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       # 爬虫配置
       # - CRAWL_INTERVAL_MINUTES=120
       # - SUMMARY_CONCURRENCY=1

@@ -70,6 +70,10 @@ export interface ChatRequest {
   max_tokens?: number;
 }
 
+export interface ChatResponse {
+  reply: string;
+}
+
 export interface ChatStreamChunk {
   text?: string;
   done?: boolean;

@@ -3,6 +3,7 @@
 
 支持匿名用户（限流）和用户自己API key两种模式
 """
+
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import StreamingResponse
 import json
@@ -12,13 +13,13 @@ from app.core.logging import get_logger
 router = APIRouter()
 logger = get_logger(__name__)
 
+
 @router.post("/stream")
 async def chat_stream_anonymous(
-    request: Request,
-    chat_request: ChatRequest
+    request: Request, chat_request: ChatRequest
 ) -> StreamingResponse:
     """匿名用户流式聊天接口（使用服务器API key + 全站限流）"""
-    
+
     async def generate():
         try:
             async for chunk in chat_service.stream_chat_anonymous(chat_request):
@@ -27,8 +28,8 @@ async def chat_stream_anonymous(
         except Exception as e:
             # 错误处理
             error_data = json.dumps({"error": f"服务器错误: {str(e)}"})
-            yield f'data: {error_data}\n\n'
-    
+            yield f"data: {error_data}\n\n"
+
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
@@ -36,7 +37,7 @@ async def chat_stream_anonymous(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
-        }
+        },
     )
 
 
@@ -44,25 +45,24 @@ async def chat_stream_anonymous(
 async def chat_stream_with_user_key(
     request: Request,
     chat_request: ChatRequest,
-    x_api_key: str = Header(alias="X-API-Key")
+    x_api_key: str = Header(alias="X-API-Key"),
 ) -> StreamingResponse:
     """用户自己API key的流式聊天接口（无限流）"""
-    
+
     if not x_api_key:
-        raise HTTPException(
-            status_code=400, 
-            detail="Missing X-API-Key header"
-        )
-    
+        raise HTTPException(status_code=400, detail="Missing X-API-Key header")
+
     async def generate():
         try:
-            async for chunk in chat_service.stream_chat_with_user_key(chat_request, x_api_key):
+            async for chunk in chat_service.stream_chat_with_user_key(
+                chat_request, x_api_key
+            ):
                 yield chunk
         except Exception as e:
             # 错误处理
             error_data = json.dumps({"error": f"服务器错误: {str(e)}"})
-            yield f'data: {error_data}\n\n'
-    
+            yield f"data: {error_data}\n\n"
+
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
@@ -70,7 +70,7 @@ async def chat_stream_with_user_key(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
-        }
+        },
     )
 
 

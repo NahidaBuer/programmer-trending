@@ -10,3 +10,7 @@ __pypackages__/
 .env
 .env.local
 *.db
+
+*/.venv/
+*/.ruff_cache/
+.vscode/

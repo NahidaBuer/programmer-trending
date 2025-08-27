@@ -22,7 +22,7 @@ export default function ChatInput({
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+      textarea.style.height = Math.min(textarea.scrollHeight, 480) + "px";
     }
   };
 
@@ -59,19 +59,25 @@ export default function ChatInput({
 
   // 插入内容的方法
   const insertContent = useCallback((content: string) => {
-    setMessage(currentMessage => {
-      const newMessage = currentMessage ? `${currentMessage}\n\n${content}` : content;
-      
-      // 设置焦点到文本框并移动光标到末尾
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newMessage.length, newMessage.length);
-        }
-      }, 0);
-      
+    setMessage((currentMessage) => {
+      const newMessage = currentMessage
+        ? `${currentMessage}\n\n${content}`
+        : content;
       return newMessage;
     });
+
+    // 设置焦点到文本框并移动光标到末尾
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        // 重新计算当前值的长度
+        const currentValue = textareaRef.current.value;
+        textareaRef.current.setSelectionRange(
+          currentValue.length,
+          currentValue.length
+        );
+      }
+    }, 0);
   }, []);
 
   // 暴露插入方法给父组件
@@ -83,8 +89,8 @@ export default function ChatInput({
 
   return (
     <div className="border-t border-gray-200 bg-white p-4">
-      <form onSubmit={handleSubmit} className="flex items-end space-x-3">
-        <div className="flex-1 relative">
+      <form onSubmit={handleSubmit} className="items-end space-x-3">
+        <div className="flex relative">
           <textarea
             ref={textareaRef}
             value={message}
@@ -92,14 +98,16 @@ export default function ChatInput({
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
-            placeholder={disabled ? "AI 正在回复中..." : (placeholder || "输入你的问题...")}
+            placeholder={
+              disabled ? "AI 正在回复中..." : placeholder || "输入你的问题..."
+            }
             disabled={disabled}
             className={`
               w-full resize-none rounded-lg border border-gray-300 px-4 py-3 pr-12
               focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500
               disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
               transition-colors duration-200
-              min-h-[50px] max-h-[120px]
+              min-h-[50px] 
             `}
             rows={1}
           />

@@ -8,9 +8,7 @@ import { useDiscussionStorage } from "../hooks/useDiscussionStorage";
 export default function Chat() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState<string>("");
-  const [insertHandler, setInsertHandler] = useState<
-    ((content: string) => void) | null
-  >(null);
+  const insertHandlerRef = useRef<((content: string) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { count, generateMarkdown } = useDiscussionStorage();
@@ -45,10 +43,14 @@ export default function Chat() {
   };
 
   const handleInsertDiscussion = () => {
-    if (insertHandler) {
+    if (insertHandlerRef.current) {
       const markdown = generateMarkdown();
-      insertHandler(markdown);
+      insertHandlerRef.current(markdown);
     }
+  };
+
+  const handleGetInsertHandler = (handler: (content: string) => void) => {
+    insertHandlerRef.current = handler;
   };
 
   return (
@@ -243,7 +245,7 @@ export default function Chat() {
               ? `输入你的问题... (${rateLimitInfo})`
               : "输入你的问题..."
           }
-          onGetInsertHandler={setInsertHandler}
+          onGetInsertHandler={handleGetInsertHandler}
         />
       </div>
     </div>

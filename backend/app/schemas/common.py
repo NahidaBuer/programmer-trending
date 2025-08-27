@@ -16,4 +16,6 @@ class PaginationMeta(BaseModel):
 class APIResponse(BaseModel, Generic[T]):
     data: Optional[T] = Field(None, description="响应数据")
     error: Optional[str] = Field(None, description="错误信息")
-    meta: dict[str, Any] = Field(default_factory=dict, description="元数据，包含 requestId 等")
+    meta: dict[str, Any] = Field(
+        default_factory=dict, description="元数据，包含 requestId 等"
+    )

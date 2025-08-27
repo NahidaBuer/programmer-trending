@@ -1,66 +1,19 @@
 import { useState } from "react";
 import type { ItemWithSummary } from "../types/api";
 import { useDiscussionStorage } from "../hooks/useDiscussionStorage";
+import { 
+  formatTimeAgo, 
+  getSourceDisplayName, 
+  getDiscussionUrl, 
+  getDisplayTitle,
+  hasTranslatedTitle,
+  getSummaryStatusDisplay
+} from "../utils/itemHelpers";
 
 interface ItemCardProps {
   item: ItemWithSummary;
 }
 
-// 数据源名称映射
-function getSourceDisplayName(sourceId: string): string {
-  const sourceNames: Record<string, string> = {
-    hackernews: "Hacker News",
-    // 'github': 'GitHub',
-  };
-  return sourceNames[sourceId] || sourceId;
-}
-
-// 生成讨论链接
-function getDiscussionUrl(item: ItemWithSummary): string | null {
-  if (item.source_id === "hackernews") {
-    return `https://news.ycombinator.com/item?id=${item.id}`;
-  }
-  // 其他数据源暂时返回原始链接
-  return item.url;
-}
-
-// 格式化时间显示
-function formatTimeAgo(dateString: string): string {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffInHours = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  );
-
-  if (diffInHours < 1) return "刚刚";
-  if (diffInHours < 24) return `${diffInHours}小时前`;
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 30) return `${diffInDays}天前`;
-
-  const diffInMonths = Math.floor(diffInDays / 30);
-  return `${diffInMonths}个月前`;
-}
-
-// 获取摘要状态显示
-function getSummaryStatusDisplay(
-  status?: string
-): { text: string; className: string } | null {
-  switch (status) {
-    case "pending":
-      return { text: "等待摘要", className: "bg-yellow-100 text-yellow-800" };
-    case "in_progress":
-      return { text: "生成中", className: "bg-blue-100 text-blue-800" };
-    case "completed":
-      return null; // 完成状态不显示badge
-    case "failed":
-      return { text: "摘要失败", className: "bg-red-100 text-red-800" };
-    case "permanently_failed":
-      return { text: "摘要不可用", className: "bg-gray-100 text-gray-800" };
-    default:
-      return null;
-  }
-}
 
 export default function ItemCard({ item }: ItemCardProps) {
   const [showToast, setShowToast] = useState(false);
@@ -69,7 +22,7 @@ export default function ItemCard({ item }: ItemCardProps) {
   const { add, remove, contains } = useDiscussionStorage();
 
   // 智能标题显示：优先显示翻译标题，无则回落到原始标题
-  const displayTitle = item.translated_title?.trim() || item.title;
+  const displayTitle = getDisplayTitle(item);
 
   // 摘要状态显示
   const summaryStatus = getSummaryStatusDisplay(item.summary_status);
@@ -135,8 +88,7 @@ export default function ItemCard({ item }: ItemCardProps) {
             {displayTitle}
           </a>
           {/* 如果显示的是翻译标题，小字显示原标题 */}
-          {item.translated_title?.trim() &&
-            item.translated_title !== item.title && (
+          {hasTranslatedTitle(item) && (
               <p className="text-sm text-gray-500 mt-1 line-clamp-1">
                 <a
                   href={item.url}
@@ -216,7 +168,7 @@ export default function ItemCard({ item }: ItemCardProps) {
 
           {/* 数据源和讨论链接 */}
           <a
-            href={getDiscussionUrl(item)!}
+            href={getDiscussionUrl(item)}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-blue-600"

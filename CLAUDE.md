@@ -18,13 +18,6 @@ uv sync
 
 # 启动开发服务器 (端口 8000)
 uv run uvicorn main:app --reload
-
-# 类型检查
-mypy --strict
-
-# 代码格式化 (如果使用 ruff)
-ruff check .
-ruff format .
 ```
 
 ### 前端 (React + TypeScript)
@@ -36,24 +29,17 @@ cd frontend
 pnpm install
 
 # 启动开发服务器 (端口 5173)
-pnpm run dev
+pnpm dev
 
 # 构建
-pnpm run build
-
-# 类型检查
-pnpm run type-check
+pnpm build
 ```
 
 ### Docker 部署
 
-```bash
-# 构建并启动所有服务
-docker-compose up --build
+参见 [`backend/README.md`](./backend/README.md#docker-开发--部署)。
 
-# 后台运行
-docker-compose up -d
-```
+前端建议使用 `pnpm build` 构建为静态资源后，采取任意方式分发或部署，比如 nginx 或各类静态托管服务。
 
 ## 项目架构
 
@@ -61,7 +47,7 @@ docker-compose up -d
 
 - **后端**: FastAPI + Python 3.13 + SQLAlchemy + APScheduler
 - **前端**: React 19 + TypeScript + Vite + Tailwind CSS
-- **数据库**: PostgreSQL (生产) / SQLite (开发)
+- **数据库**: SQLite, 可选 PostgreSQL
 - **AI**: Google Gemini API
 - **包管理**: 后端用 `uv`，前端用 `pnpm`
 
@@ -111,17 +97,6 @@ frontend/
 - 分页参数: `page` (默认 1), `page_size` (默认 20，最大 100)
 - 时间格式: ISO8601 UTC
 
-### 环境变量
-
-后端通过 `backend/.env` 文件配置：
-
-- `DATABASE_URL`: 数据库连接字符串
-- `GOOGLE_API_KEY`: Google Gemini API 密钥
-- `CRAWL_INTERVAL_MINUTES`: 抓取间隔 (默认 120)
-- `SUMMARY_CONCURRENCY`: 摘要生成并发度
-
-前端通过 `frontend/.env` 配置。
-
 ## 核心功能模块
 
 ### 数据抓取
@@ -150,24 +125,3 @@ frontend/
 - `sources`: 数据源配置
 - `items`: 热榜条目
 - `summaries`: AI 摘要结果
-
-## 重要文件
-
-- `.cursor/rules/project-config.mdc`: 详细的项目开发规则和架构设计
-- `backend/pyproject.toml`: Python 项目配置
-- `backend/main.py`: 后端入口文件
-
-## 开发状态
-
-项目后端已完成基础开发，包括：
-
-- ✅ FastAPI 应用主体架构
-- ✅ 数据库模型和迁移
-- ✅ Hacker News 爬虫实现
-- ✅ Google Gemini AI 摘要服务
-- ✅ APScheduler 定时任务调度
-- ✅ RESTful API 端点 (sources, items, summaries, chat)
-- ✅ 全局异常处理和请求 ID 中间件
-- ✅ 健康检查接口
-
-前端开发待启动。

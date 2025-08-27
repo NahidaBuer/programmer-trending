@@ -29,7 +29,7 @@ uv run alembic upgrade head
 uv run uvicorn main:app --reload
 ```
 
-### Docker 部署
+### Docker 开发 / 部署
 
 #### 1. 使用 Docker Compose（推荐）
 
@@ -55,17 +55,13 @@ docker-compose up -d
 # 构建镜像
 docker build -t programmer-trending-backend .
 
-# 创建数据目录
-mkdir -p ./data ./logs
-
 # 运行容器
 docker run -d \
   --name programmer-trending \
   -p 8000:8000 \
   -e GOOGLE_API_KEY=your_api_key_here \
-  -e DATABASE_URL=sqlite:///app/data/app.db \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/logs:/app/logs \
+  -e DATABASE_URL=sqlite+aiosqlite:///app/data/app.db \
+  -v $(pwd)/programmer_trending.db:/app/programmer_trending.db \
   --restart unless-stopped \
   programmer-trending-backend
 ```
@@ -78,7 +74,7 @@ docker run -d \
 
 ```yaml
 volumes:
-  - ./data:/app/data # 数据库文件持久化
+  - ./programmer_trending.db:/app/programmer_trending.db # 数据库文件持久化
 ```
 
 使用 SQLite 时，如果不挂载数据库，容器删除时所有数据都会丢失！
@@ -140,6 +136,6 @@ Docker 镜像启动时会自动运行数据库迁移，无需手动操作。
 ## 注意事项
 
 1. **API 密钥安全**：不要在代码中硬编码 API 密钥，使用环境变量
-2. **数据备份**：定期备份 SQLite 数据库文件
+2. **数据备份**：定期备份数据库（SQLite 或 PostgreSQL）
 3. **资源监控**：监控 API 调用频率，避免超出限额
 4. **网络连接**：确保服务器能访问外部 API（Google Gemini）

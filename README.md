@@ -6,8 +6,8 @@
 
 - **前端**: React 19 + TypeScript + Vite + Tailwind CSS
 - **后端**: FastAPI + Python 3.13 + SQLAlchemy + APScheduler
-- **AI**: DeepSeek API
-- **数据库**: PostgreSQL (生产) / SQLite (开发)
+- **AI**: Google Gemini API
+- **数据库**: SQLite / 也支持 PostgreSQL
 - **部署**: Docker + Docker Compose
 
 ## 数据源
@@ -36,10 +36,6 @@ MVP 版本先做：
 ### 安装依赖
 
 ```bash
-# 后端
-cd backend
-uv sync
-
 # 前端
 cd frontend
 pnpm install
@@ -48,10 +44,6 @@ pnpm install
 ### 配置环境变量
 
 ```bash
-# 后端配置
-cp backend/.env.example backend/.env
-# 编辑 backend/.env 填入真实配置
-
 # 前端配置
 cp frontend/.env.example frontend/.env
 # 编辑 frontend/.env 填入真实配置
@@ -60,10 +52,6 @@ cp frontend/.env.example frontend/.env
 ### 运行开发服务器
 
 ```bash
-# 后端 (端口 8000)
-cd backend
-uv run uvicorn main:app --reload
-
 # 前端 (端口 5173)
 cd frontend
 npm run dev
@@ -106,7 +94,3 @@ chat-demo/
 ## 开发指南
 
 详细的开发规范和架构设计请参考 `.cursor/rules/project-config.mdc`。
-
-## 许可证
-
-GPL-3 License
