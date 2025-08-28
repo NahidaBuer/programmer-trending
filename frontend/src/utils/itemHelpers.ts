@@ -36,7 +36,7 @@ export function getSourceDisplayName(sourceId: string): string {
  */
 export function getDiscussionUrl(item: ItemWithSummary): string {
   if (item.source_id === "hackernews") {
-    return `https://news.ycombinator.com/item?id=${item.id}`;
+    return `https://news.ycombinator.com/item?id=${item.source_internal_id}`;
   }
   return item.url;
 }

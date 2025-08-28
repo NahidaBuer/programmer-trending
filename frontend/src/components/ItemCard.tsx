@@ -1,19 +1,18 @@
 import { useState } from "react";
 import type { ItemWithSummary } from "../types/api";
 import { useDiscussionStorage } from "../hooks/useDiscussionStorage";
-import { 
-  formatTimeAgo, 
-  getSourceDisplayName, 
-  getDiscussionUrl, 
+import {
+  formatTimeAgo,
+  getSourceDisplayName,
+  getDiscussionUrl,
   getDisplayTitle,
   hasTranslatedTitle,
-  getSummaryStatusDisplay
+  getSummaryStatusDisplay,
 } from "../utils/itemHelpers";
 
 interface ItemCardProps {
   item: ItemWithSummary;
 }
-
 
 export default function ItemCard({ item }: ItemCardProps) {
   const [showToast, setShowToast] = useState(false);
@@ -53,12 +52,12 @@ export default function ItemCard({ item }: ItemCardProps) {
     setToastMessage(message);
     setShowToast(true);
     setIsToastFading(false);
-    
+
     // 开始淡出
     setTimeout(() => {
       setIsToastFading(true);
     }, 1500);
-    
+
     // 完全隐藏
     setTimeout(() => {
       setShowToast(false);
@@ -70,9 +69,13 @@ export default function ItemCard({ item }: ItemCardProps) {
     <article className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow relative">
       {/* Toast 提示 */}
       {showToast && (
-        <div className={`absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 ${
-          isToastFading ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0 animate-fade-in'
-        }`}>
+        <div
+          className={`absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 ${
+            isToastFading
+              ? "opacity-0 translate-y-2"
+              : "opacity-100 translate-y-0 animate-fade-in"
+          }`}
+        >
           {toastMessage}
         </div>
       )}
@@ -89,17 +92,17 @@ export default function ItemCard({ item }: ItemCardProps) {
           </a>
           {/* 如果显示的是翻译标题，小字显示原标题 */}
           {hasTranslatedTitle(item) && (
-              <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-blue-600"
-                >
-                  {item.title}
-                </a>
-              </p>
-            )}
+            <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-600"
+              >
+                {item.title}
+              </a>
+            </p>
+          )}
         </div>
 
         {/* 讨论按钮 */}
@@ -114,7 +117,7 @@ export default function ItemCard({ item }: ItemCardProps) {
           }`}
           title={isInDiscussion ? "从讨论清单移除" : "加入讨论清单"}
         >
-          {isInDiscussion ? "移除" : "讨论"}
+          {isInDiscussion ? "-" : "+"}
         </button>
       </div>
       {/* AI 摘要 */}
