@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     cors_allow_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173"
     )
-    cors_allow_credentials: bool = Field(default=True)
+    cors_allow_credentials: bool = Field(default=False)
 
     # Logging
     log_level: str = Field(default="DEBUG")
